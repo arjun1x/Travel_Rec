@@ -4,6 +4,9 @@ import LandingPage from './pages/LandingPage'
 import ExplorePage from './pages/ExplorePage'
 import SavedPage from './pages/SavedPage'
 import DestinationPage from './pages/DestinationPage'
+import LoginPage from './pages/LoginPage'
+import RegisterPage from './pages/RegisterPage'
+import ProfilePage from './pages/ProfilePage'
 
 const router = createBrowserRouter([
   {
@@ -13,6 +16,9 @@ const router = createBrowserRouter([
       { path: '/explore', element: <ExplorePage /> },
       { path: '/saved', element: <SavedPage /> },
       { path: '/destinations/:id', element: <DestinationPage /> },
+      { path: '/login', element: <LoginPage /> },
+      { path: '/register', element: <RegisterPage /> },
+      { path: '/profile', element: <ProfilePage /> },
     ],
   },
 ])

@@ -26,6 +26,15 @@ const TAG_EMOJI: Record<string, string> = {
   beach: '🏖️',
   wine: '🍷',
   skiing: '⛷️',
+  nightlife: '🌃',
+  markets: '🛍️',
+  desert: '🏜️',
+  island: '🏝️',
+  scenic: '🌄',
+  surfing: '🏄',
+  wildlife: '🦁',
+  safari: '🦓',
+  music: '🎻',
 }
 
 export function gradientFor(name: string): string {

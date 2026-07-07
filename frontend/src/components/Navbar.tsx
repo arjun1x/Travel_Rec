@@ -1,4 +1,5 @@
 import { Link, NavLink } from 'react-router'
+import { useAuth } from '../lib/auth'
 import { useShortlist } from '../lib/shortlist'
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -10,6 +11,7 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
 
 export default function Navbar() {
   const { ids } = useShortlist()
+  const { user, isAuthed } = useAuth()
 
   return (
     <header className="sticky top-0 z-30 border-b border-gray-200/70 bg-white/80 backdrop-blur-md dark:border-gray-800/70 dark:bg-gray-950/80">
@@ -38,12 +40,30 @@ export default function Navbar() {
           </a>
         </nav>
 
-        <Link
-          to="/explore"
-          className="rounded-full bg-gray-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-gray-700 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200"
-        >
-          Start exploring
-        </Link>
+        <div className="flex items-center gap-2">
+          {isAuthed ? (
+            <Link
+              to="/profile"
+              className="flex items-center gap-1.5 rounded-full border border-gray-300 px-3.5 py-2 text-sm font-semibold transition hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-800"
+            >
+              <span aria-hidden>👤</span>
+              {user ? user.name.split(' ')[0] : 'Profile'}
+            </Link>
+          ) : (
+            <Link
+              to="/login"
+              className="rounded-full px-3.5 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+            >
+              Sign in
+            </Link>
+          )}
+          <Link
+            to="/explore"
+            className="rounded-full bg-gray-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-gray-700 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200"
+          >
+            Start exploring
+          </Link>
+        </div>
       </div>
     </header>
   )
