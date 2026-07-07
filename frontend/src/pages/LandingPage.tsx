@@ -1,9 +1,11 @@
+import { useMemo } from 'react'
 import { Link } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import { getDestinations } from '../lib/api'
 import CardSkeleton from '../components/CardSkeleton'
 import DestinationCard from '../components/DestinationCard'
 import DestinationImage from '../components/DestinationImage'
+import { GlobeLive, type GlobeMarker } from '@/components/ui/globe-live'
 
 const FEATURES = [
   {
@@ -111,12 +113,22 @@ const FAQS = [
 export default function LandingPage() {
   const { data: destinations, isPending } = useQuery({
     queryKey: ['destinations', ''],
-    queryFn: () => getDestinations(),
+    queryFn: () => getDestinations(100),
   })
 
   const guides = (destinations ?? []).slice(0, 4)
-  const inspirations = destinations ?? []
+  const inspirations = (destinations ?? []).slice(0, 20)
   const aspects = ['aspect-[3/4]', 'aspect-square', 'aspect-[4/5]', 'aspect-[3/2]']
+
+  const globeMarkers = useMemo<GlobeMarker[] | undefined>(
+    () =>
+      destinations?.map((d) => ({
+        id: String(d.id),
+        location: [d.lat, d.lng] as [number, number],
+        size: 0.03 + 0.05 * d.popularity_score,
+      })),
+    [destinations],
+  )
 
   return (
     <main>
@@ -124,41 +136,54 @@ export default function LandingPage() {
       <section className="relative overflow-hidden">
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 bg-gradient-to-b from-sky-100/80 via-transparent to-transparent dark:from-sky-950/50"
+          className="pointer-events-none absolute inset-0 bg-gradient-to-b from-sky-100/80 via-transparent to-transparent dark:from-sky-950/40"
         />
-        <div className="relative mx-auto max-w-4xl px-4 pb-16 pt-20 text-center sm:pt-28">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-200 bg-white px-4 py-1.5 text-sm font-medium text-sky-700 shadow-sm dark:border-sky-800 dark:bg-gray-900 dark:text-sky-300">
-            ✨ AI-powered trip discovery
-          </span>
-          <h1 className="mt-6 text-5xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl">
-            The{' '}
-            <span className="bg-gradient-to-r from-sky-500 to-indigo-600 bg-clip-text text-transparent">
-              AI trip planner
-            </span>{' '}
-            for your next adventure
-          </h1>
-          <p className="mx-auto mt-5 max-w-2xl text-lg text-gray-600 dark:text-gray-300">
-            Smarter than endless tabs: search destinations by vibe, check live weather at a
-            glance, shortlist favorites — and soon, let Claude plan your days.
-          </p>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Link
-              to="/explore"
-              className="rounded-full bg-gray-900 px-7 py-3.5 font-semibold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-gray-700 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200"
-            >
-              ⛰️ Start exploring
-            </Link>
-            <a
-              href="#features"
-              className="rounded-full border border-gray-300 bg-white px-7 py-3.5 font-semibold text-gray-800 shadow-sm transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:hover:bg-gray-800"
-            >
-              How it works
-            </a>
+        <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-4 pb-14 pt-14 lg:grid-cols-2 lg:gap-8 lg:pb-20 lg:pt-16">
+          <div className="text-center lg:text-left">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-200 bg-white px-4 py-1.5 text-sm font-medium text-sky-700 shadow-sm dark:border-sky-800 dark:bg-gray-900 dark:text-sky-300">
+              ✨ AI-powered trip discovery
+            </span>
+            <h1 className="mt-6 text-5xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl">
+              The{' '}
+              <span className="bg-gradient-to-r from-sky-500 to-indigo-600 bg-clip-text text-transparent">
+                AI trip planner
+              </span>{' '}
+              for your next adventure
+            </h1>
+            <p className="mx-auto mt-5 max-w-xl text-lg text-gray-600 dark:text-gray-300 lg:mx-0">
+              Smarter than endless tabs: search destinations by vibe, check live weather at
+              a glance, shortlist favorites — and soon, let Claude plan your days.
+            </p>
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
+              <Link
+                to="/explore"
+                className="rounded-full bg-gray-900 px-7 py-3.5 font-semibold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-gray-700 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200"
+              >
+                ⛰️ Start exploring
+              </Link>
+              <a
+                href="#features"
+                className="rounded-full border border-gray-300 bg-white px-7 py-3.5 font-semibold text-gray-800 shadow-sm transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:hover:bg-gray-800"
+              >
+                How it works
+              </a>
+            </div>
+            <p className="mt-6 text-sm text-gray-500 dark:text-gray-400">
+              <span aria-hidden className="text-amber-400">★★★★★</span> Live weather · 50
+              curated destinations · Zero sign-up
+            </p>
           </div>
-          <p className="mt-6 text-sm text-gray-500 dark:text-gray-400">
-            <span aria-hidden className="text-amber-400">★★★★★</span> Live weather · Curated
-            destinations · Zero sign-up
-          </p>
+
+          <div className="relative mx-auto w-full max-w-sm sm:max-w-md lg:max-w-lg">
+            <div
+              aria-hidden
+              className="absolute inset-4 rounded-full bg-sky-400/25 blur-3xl dark:bg-sky-500/15"
+            />
+            <GlobeLive markers={globeMarkers} className="relative" />
+            <p className="mt-3 text-center text-xs text-gray-400 dark:text-gray-500">
+              Every dot is a destination you can book today — drag to spin.
+            </p>
+          </div>
         </div>
       </section>
 
