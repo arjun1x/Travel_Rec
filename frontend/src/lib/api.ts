@@ -1,5 +1,6 @@
 import type { Booking, BookingDetail } from '../types/booking'
 import type { Destination, Weather } from '../types/destination'
+import type { Itinerary } from '../types/itinerary'
 import type { Listing, ListingFilters, ListingsPage } from '../types/listing'
 import { authFetch } from './auth'
 
@@ -87,6 +88,12 @@ export async function transitionBooking(id: number, action: 'confirm' | 'cancel'
     const body = await res.json().catch(() => null)
     throw new Error(body?.detail ?? `Could not ${action} booking`)
   }
+  return res.json()
+}
+
+export async function getItineraries(): Promise<Itinerary[]> {
+  const res = await authFetch('/api/itineraries')
+  if (!res.ok) throw new Error(`Could not load itineraries (${res.status})`)
   return res.json()
 }
 

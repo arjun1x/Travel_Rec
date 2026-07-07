@@ -1,4 +1,5 @@
 import { Outlet, ScrollRestoration } from 'react-router'
+import AssistantWidget from './AssistantWidget'
 import Footer from './Footer'
 import Navbar from './Navbar'
 
@@ -11,6 +12,7 @@ export default function Layout() {
         <Outlet />
       </div>
       <Footer />
+      <AssistantWidget />
     </div>
   )
 }

@@ -50,10 +50,9 @@ const FEATURES: Feature[] = [
   {
     icon: Sparkles,
     title: 'AI itineraries',
-    body: 'Coming soon: Claude plans your days around your dates, interests, and the live forecast — with a budget summary and smart tips.',
+    body: 'Claude plans your days around your dates, interests, and the live forecast — with a budget summary and smart tips. Find it on any destination page.',
     example: 'Example: “4 days in Kyoto in November, temples + food, under $900.”',
     tint: 'bg-violet-50 dark:bg-violet-950/30',
-    soon: true,
   },
 ]
 
@@ -180,7 +179,7 @@ export default function LandingPage() {
           </h1>
           <p className="mx-auto mt-5 max-w-2xl text-lg text-gray-600 dark:text-gray-300">
             Smarter than endless tabs: search destinations by vibe, check live weather at a
-            glance, shortlist favorites — and soon, let Claude plan your days.
+            glance, shortlist favorites — and let Claude plan your days.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link

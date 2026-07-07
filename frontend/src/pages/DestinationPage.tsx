@@ -1,9 +1,10 @@
 import { lazy, Suspense } from 'react'
 import { Link, useParams } from 'react-router'
-import { Map as MapIcon, Sparkles } from 'lucide-react'
+import { Map as MapIcon } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { getDestination } from '../lib/api'
 import DestinationImage from '../components/DestinationImage'
+import ItineraryBuilder from '../components/ItineraryBuilder'
 import SaveButton from '../components/SaveButton'
 import SimilarRail from '../components/SimilarRail'
 import StaysSection from '../components/StaysSection'
@@ -101,16 +102,6 @@ export default function DestinationPage() {
             </Suspense>
           </div>
 
-          {/* Coming soon: AI itinerary CTA */}
-          <div className="mt-8 rounded-2xl border border-dashed border-sky-300 bg-sky-50/60 p-6 dark:border-sky-800 dark:bg-sky-950/40">
-            <h3 className="flex items-center gap-1.5 font-semibold text-sky-800 dark:text-sky-300">
-              <Sparkles className="h-4 w-4" aria-hidden /> AI itinerary builder — coming soon
-            </h3>
-            <p className="mt-1 text-sm text-sky-700/80 dark:text-sky-400/80">
-              Pick your dates and interests and Claude will plan your days around the
-              weather, with a budget summary and smart tips.
-            </p>
-          </div>
         </div>
 
         {/* Right: weather */}
@@ -118,6 +109,8 @@ export default function DestinationPage() {
           <WeatherPanel destinationId={destination.id} />
         </aside>
       </div>
+
+      <ItineraryBuilder destination={destination} />
 
       <StaysSection destinationId={destination.id} />
 

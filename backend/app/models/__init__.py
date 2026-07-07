@@ -5,6 +5,7 @@ from app.models.destination import Destination
 from app.models.interaction import Interaction
 from app.models.itinerary import Itinerary
 from app.models.listing import Listing
+from app.models.llm_usage import LlmUsage
 from app.models.review import Review
 from app.models.user import User, UserPreference
 
@@ -15,6 +16,7 @@ __all__ = [
     "Interaction",
     "Itinerary",
     "Listing",
+    "LlmUsage",
     "Review",
     "User",
     "UserPreference",

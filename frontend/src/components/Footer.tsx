@@ -20,13 +20,11 @@ export default function Footer() {
             <li><Link to="/explore" className="hover:text-white">Explore destinations</Link></li>
             <li><Link to="/saved" className="hover:text-white">Saved trips</Link></li>
             <li>
-              <span className="text-gray-500">AI itineraries</span>{' '}
-              <span className="rounded-full bg-sky-950 px-2 py-0.5 text-[10px] font-semibold text-sky-300">soon</span>
+              <Link to="/explore" className="hover:text-white">
+                AI itineraries
+              </Link>
             </li>
-            <li>
-              <span className="text-gray-500">Travel assistant</span>{' '}
-              <span className="rounded-full bg-sky-950 px-2 py-0.5 text-[10px] font-semibold text-sky-300">soon</span>
-            </li>
+            <li><span className="text-gray-400">Travel assistant — bottom right</span></li>
           </ul>
         </div>
         <div>

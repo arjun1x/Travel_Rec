@@ -1,10 +1,13 @@
+import { useState } from 'react'
 import { Link, Navigate } from 'react-router'
-import { Luggage } from 'lucide-react'
+import { ChevronDown, Luggage, Sparkles } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { getBookings, transitionBooking } from '../lib/api'
+import { getBookings, getDestination, getItineraries, transitionBooking } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import type { BookingDetail, BookingStatus } from '../types/booking'
+import type { Itinerary } from '../types/itinerary'
 import DestinationImage from '../components/DestinationImage'
+import ItineraryView from '../components/ItineraryView'
 
 const STATUS_STYLES: Record<BookingStatus, string> = {
   held: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
@@ -78,11 +81,56 @@ function TripRow({ booking }: { booking: BookingDetail }) {
   )
 }
 
+function ItineraryRow({ itinerary }: { itinerary: Itinerary }) {
+  const [expanded, setExpanded] = useState(false)
+  const { data: destination } = useQuery({
+    queryKey: ['destination', String(itinerary.destination_id)],
+    queryFn: () => getDestination(itinerary.destination_id),
+  })
+
+  return (
+    <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+      <button
+        onClick={() => setExpanded((v) => !v)}
+        className="flex w-full items-center justify-between gap-3 text-left"
+      >
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-4 w-4 shrink-0 text-sky-500" aria-hidden />
+          <div>
+            <p className="font-semibold tracking-tight">
+              {destination ? `${destination.name}, ${destination.country}` : 'Itinerary'}
+            </p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {itinerary.start_date} → {itinerary.end_date} ·{' '}
+              {itinerary.days.days?.length ?? 0} days
+              {itinerary.budget_total != null && ` · ~$${Math.round(itinerary.budget_total)}`}
+            </p>
+          </div>
+        </div>
+        <ChevronDown
+          className={`h-5 w-5 shrink-0 text-gray-400 transition ${expanded ? 'rotate-180' : ''}`}
+          aria-hidden
+        />
+      </button>
+      {expanded && (
+        <div className="mt-4">
+          <ItineraryView plan={itinerary.days} />
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function TripsPage() {
   const { isAuthed } = useAuth()
   const { data, isPending } = useQuery({
     queryKey: ['bookings'],
     queryFn: getBookings,
+    enabled: isAuthed,
+  })
+  const { data: itineraries } = useQuery({
+    queryKey: ['itineraries'],
+    queryFn: getItineraries,
     enabled: isAuthed,
   })
 
@@ -104,6 +152,20 @@ export default function TripsPage() {
           ))}
         {data?.map((booking) => <TripRow key={booking.id} booking={booking} />)}
       </div>
+
+      {itineraries && itineraries.length > 0 && (
+        <>
+          <h2 className="mt-12 flex items-center gap-2 text-xl font-bold tracking-tight">
+            <Sparkles className="h-5 w-5 text-sky-500" aria-hidden />
+            AI itineraries
+          </h2>
+          <div className="mt-4 space-y-4">
+            {itineraries.map((itinerary) => (
+              <ItineraryRow key={itinerary.id} itinerary={itinerary} />
+            ))}
+          </div>
+        </>
+      )}
 
       {data && data.length === 0 && (
         <div className="mt-12 rounded-3xl border border-dashed border-gray-300 bg-white p-14 text-center dark:border-gray-700 dark:bg-gray-900">
