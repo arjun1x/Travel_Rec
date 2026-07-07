@@ -83,7 +83,7 @@ export default function ProfilePage() {
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight">
-            Hi, <span className="text-sky-600 dark:text-sky-400">{user?.name ?? 'traveler'}</span> 👋
+            Hi, <span className="text-sky-600 dark:text-sky-400">{user?.name ?? 'traveler'}</span>
           </h1>
           <p className="mt-1 text-gray-500 dark:text-gray-400">{user?.email}</p>
         </div>

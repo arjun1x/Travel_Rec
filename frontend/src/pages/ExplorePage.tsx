@@ -1,11 +1,12 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { Luggage, Search } from 'lucide-react'
 import { getDestinations, searchDestinations } from '../lib/api'
 import CardSkeleton from '../components/CardSkeleton'
 import DestinationCard from '../components/DestinationCard'
 
-// Leaflet stays out of the main bundle
-const ExploreMap = lazy(() => import('../components/ExploreMap'))
+// cobe stays out of the main bundle
+const ExploreGlobe = lazy(() => import('../components/ExploreGlobe'))
 
 export default function ExplorePage() {
   const [input, setInput] = useState('')
@@ -55,9 +56,10 @@ export default function ExplorePage() {
       </p>
 
       <div className="relative mt-6 max-w-xl">
-        <span aria-hidden className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-          🔍
-        </span>
+        <Search
+          aria-hidden
+          className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+        />
         <input
           type="search"
           value={input}
@@ -116,7 +118,7 @@ export default function ExplorePage() {
           )}
           {!isPending && !isError && results.length === 0 && (
             <div className="mt-10 rounded-xl border border-gray-200 bg-white p-10 text-center dark:border-gray-800 dark:bg-gray-900">
-              <p className="text-3xl" aria-hidden>🧳</p>
+              <Luggage aria-hidden className="mx-auto h-8 w-8 text-gray-400" />
               <p className="mt-2 font-medium">No destinations match</p>
               <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 Try a different search{activeTags.size > 0 && ' or clear the tag filters'}.
@@ -126,11 +128,11 @@ export default function ExplorePage() {
         </div>
 
         <aside className="hidden lg:block">
-          <div className="sticky top-20 h-[calc(100vh-6rem)]">
+          <div className="sticky top-20">
             <Suspense
-              fallback={<div className="h-full w-full animate-pulse rounded-2xl bg-gray-200 dark:bg-gray-800" />}
+              fallback={<div className="aspect-square w-full animate-pulse rounded-2xl bg-gray-200 dark:bg-gray-800" />}
             >
-              <ExploreMap destinations={results} />
+              <ExploreGlobe destinations={results} />
             </Suspense>
           </div>
         </aside>

@@ -1,4 +1,5 @@
 import type { MouseEvent } from 'react'
+import { Heart } from 'lucide-react'
 import { useShortlist } from '../lib/shortlist'
 
 interface Props {
@@ -24,10 +25,15 @@ export default function SaveButton({ destinationId, size = 'sm' }: Props) {
       aria-label={saved ? 'Remove from saved trips' : 'Save destination'}
       title={saved ? 'Remove from saved' : 'Save for later'}
       className={`inline-flex items-center justify-center rounded-full bg-white/90 shadow-sm backdrop-blur transition hover:scale-110 dark:bg-gray-900/80 ${
-        size === 'lg' ? 'h-11 w-11 text-xl' : 'h-8 w-8 text-sm'
+        size === 'lg' ? 'h-11 w-11' : 'h-8 w-8'
       }`}
     >
-      <span aria-hidden>{saved ? '❤️' : '🤍'}</span>
+      <Heart
+        aria-hidden
+        className={`${size === 'lg' ? 'h-5 w-5' : 'h-4 w-4'} ${
+          saved ? 'fill-red-500 text-red-500' : 'text-gray-500 dark:text-gray-300'
+        }`}
+      />
     </button>
   )
 }

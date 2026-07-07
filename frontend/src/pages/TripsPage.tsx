@@ -1,4 +1,5 @@
 import { Link, Navigate } from 'react-router'
+import { Luggage } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { getBookings, transitionBooking } from '../lib/api'
 import { useAuth } from '../lib/auth'
@@ -106,7 +107,7 @@ export default function TripsPage() {
 
       {data && data.length === 0 && (
         <div className="mt-12 rounded-3xl border border-dashed border-gray-300 bg-white p-14 text-center dark:border-gray-700 dark:bg-gray-900">
-          <p className="text-4xl" aria-hidden>🧳</p>
+          <Luggage aria-hidden className="mx-auto h-10 w-10 text-gray-300 dark:text-gray-600" />
           <h2 className="mt-3 text-xl font-bold">No trips yet</h2>
           <p className="mx-auto mt-2 max-w-sm text-sm text-gray-500 dark:text-gray-400">
             Find a stay you love and place a hold — free cancellation, no payment.

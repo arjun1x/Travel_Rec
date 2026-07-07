@@ -1,4 +1,5 @@
 import { Link, NavLink } from 'react-router'
+import { CircleUserRound, Compass } from 'lucide-react'
 import { useAuth } from '../lib/auth'
 import { useShortlist } from '../lib/shortlist'
 
@@ -17,7 +18,7 @@ export default function Navbar() {
     <header className="sticky top-0 z-30 border-b border-gray-200/70 bg-white/80 backdrop-blur-md dark:border-gray-800/70 dark:bg-gray-950/80">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4">
         <Link to="/" className="flex items-center gap-2 text-lg font-extrabold tracking-tight">
-          <span aria-hidden className="text-xl">🧭</span>
+          <Compass aria-hidden className="h-6 w-6 text-sky-600 dark:text-sky-400" />
           <span>
             Travel<span className="text-sky-600 dark:text-sky-400"> Rec</span>
           </span>
@@ -56,7 +57,7 @@ export default function Navbar() {
               to="/profile"
               className="flex items-center gap-1.5 rounded-full border border-gray-300 px-3.5 py-2 text-sm font-semibold transition hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-800"
             >
-              <span aria-hidden>👤</span>
+              <CircleUserRound aria-hidden className="h-4 w-4" />
               {user ? user.name.split(' ')[0] : 'Profile'}
             </Link>
           ) : (

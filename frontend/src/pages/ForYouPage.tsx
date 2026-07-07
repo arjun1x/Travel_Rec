@@ -1,11 +1,12 @@
 import { Link, Navigate } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
+import { MapPin } from 'lucide-react'
 import { getRecommendations, trackInteraction } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import ListingCard from '../components/ListingCard'
 
 export default function ForYouPage() {
-  const { isAuthed, user } = useAuth()
+  const { isAuthed } = useAuth()
 
   const { data, isPending, isError, error } = useQuery({
     queryKey: ['recommendations'],
@@ -20,7 +21,6 @@ export default function ForYouPage() {
     <main className="mx-auto max-w-6xl px-4 py-10">
       <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
         For <span className="text-sky-600 dark:text-sky-400">you</span>
-        {user && <span className="ml-2 text-2xl">✨</span>}
       </h1>
       <p className="mt-2 max-w-2xl text-gray-500 dark:text-gray-400">
         Stays ranked by your trip styles, budget, and what you've been looking at.
@@ -42,7 +42,8 @@ export default function ForYouPage() {
               to={`/destinations/${destination.id}`}
               className="mb-2 inline-flex items-center gap-1 text-sm font-semibold text-gray-600 hover:text-sky-600 dark:text-gray-300 dark:hover:text-sky-400"
             >
-              📍 {destination.name}, {destination.country}
+              <MapPin className="h-3.5 w-3.5" aria-hidden /> {destination.name},{' '}
+              {destination.country}
             </Link>
             <div onClick={() => trackInteraction(listing.id, 'click')}>
               <ListingCard listing={listing} />

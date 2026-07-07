@@ -1,4 +1,5 @@
 import { Link } from 'react-router'
+import { Heart } from 'lucide-react'
 import { useQueries } from '@tanstack/react-query'
 import { getDestination } from '../lib/api'
 import { useShortlist } from '../lib/shortlist'
@@ -29,7 +30,7 @@ export default function SavedPage() {
 
       {ids.length === 0 ? (
         <div className="mt-12 rounded-3xl border border-dashed border-gray-300 bg-white p-14 text-center dark:border-gray-700 dark:bg-gray-900">
-          <p className="text-4xl" aria-hidden>🤍</p>
+          <Heart aria-hidden className="mx-auto h-10 w-10 text-gray-300 dark:text-gray-600" />
           <h2 className="mt-3 text-xl font-bold">Nothing saved yet</h2>
           <p className="mx-auto mt-2 max-w-sm text-sm text-gray-500 dark:text-gray-400">
             Browse destinations and tap the heart to build your shortlist.

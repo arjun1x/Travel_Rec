@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
+import { PartyPopper } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createBooking } from '../lib/api'
 import type { Listing } from '../types/listing'
@@ -45,7 +46,7 @@ export default function BookingModal({ listing, onClose }: Props) {
       >
         {mutation.isSuccess ? (
           <div className="py-6 text-center">
-            <p className="text-4xl" aria-hidden>🎉</p>
+            <PartyPopper aria-hidden className="mx-auto h-10 w-10 text-sky-500" />
             <h2 className="mt-3 text-xl font-bold tracking-tight">Hold placed!</h2>
             <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
               {listing.title} · {nights} {nights === 1 ? 'night' : 'nights'} · $

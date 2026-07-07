@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react'
 import { Link, useParams } from 'react-router'
+import { Map as MapIcon, Sparkles } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { getDestination } from '../lib/api'
 import DestinationImage from '../components/DestinationImage'
@@ -33,7 +34,7 @@ export default function DestinationPage() {
   if (isError || !destination) {
     return (
       <main className="mx-auto max-w-6xl px-4 py-16 text-center">
-        <p className="text-4xl" aria-hidden>🗺️</p>
+        <MapIcon aria-hidden className="mx-auto h-10 w-10 text-gray-300 dark:text-gray-600" />
         <h1 className="mt-3 text-2xl font-bold">Destination not found</h1>
         <Link
           to="/"
@@ -102,8 +103,8 @@ export default function DestinationPage() {
 
           {/* Coming soon: AI itinerary CTA */}
           <div className="mt-8 rounded-2xl border border-dashed border-sky-300 bg-sky-50/60 p-6 dark:border-sky-800 dark:bg-sky-950/40">
-            <h3 className="font-semibold text-sky-800 dark:text-sky-300">
-              ✨ AI itinerary builder — coming soon
+            <h3 className="flex items-center gap-1.5 font-semibold text-sky-800 dark:text-sky-300">
+              <Sparkles className="h-4 w-4" aria-hidden /> AI itinerary builder — coming soon
             </h3>
             <p className="mt-1 text-sm text-sky-700/80 dark:text-sky-400/80">
               Pick your dates and interests and Claude will plan your days around the

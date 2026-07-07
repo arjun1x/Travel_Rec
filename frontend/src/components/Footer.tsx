@@ -1,4 +1,5 @@
 import { Link } from 'react-router'
+import { Compass } from 'lucide-react'
 
 export default function Footer() {
   return (
@@ -6,7 +7,7 @@ export default function Footer() {
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <p className="flex items-center gap-2 text-lg font-extrabold tracking-tight text-white">
-            <span aria-hidden>🧭</span> Travel Rec
+            <Compass aria-hidden className="h-5 w-5 text-sky-400" /> Travel Rec
           </p>
           <p className="mt-3 max-w-xs text-sm leading-relaxed text-gray-400">
             AI-powered trip discovery — search destinations, check live weather, and

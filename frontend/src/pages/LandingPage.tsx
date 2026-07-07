@@ -1,36 +1,54 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState, type ComponentType } from 'react'
 import { Link } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
+import {
+  CarFront,
+  CloudSun,
+  Heart,
+  Route,
+  Sparkles,
+  Star,
+  Users,
+  Zap,
+} from 'lucide-react'
 import { getDestinations } from '../lib/api'
 import CardSkeleton from '../components/CardSkeleton'
 import DestinationCard from '../components/DestinationCard'
-import DestinationImage from '../components/DestinationImage'
-import { GlobeLive, type GlobeMarker } from '@/components/ui/globe-live'
+import { CircularGallery, type GalleryItem } from '@/components/ui/circular-gallery'
 
-const FEATURES = [
+interface Feature {
+  icon: ComponentType<{ className?: string }>
+  title: string
+  body: string
+  example: string
+  tint: string
+  soon?: boolean
+}
+
+const FEATURES: Feature[] = [
   {
-    emoji: '⚡',
+    icon: Zap,
     title: 'Instant discovery',
     body: 'Search by name, country, or vibe and filter by tags — mountains, food, beaches — with results in milliseconds.',
     example: 'Example: type “mountains” and toggle the skiing chip to shortlist alpine trips.',
     tint: 'bg-sky-50 dark:bg-sky-950/40',
   },
   {
-    emoji: '🌦️',
+    icon: CloudSun,
     title: 'Live weather intel',
     body: 'Every destination shows real current conditions and a 7-day forecast, so you plan around the weather — not against it.',
     example: 'Example: Reykjavik showing snow next week? Maybe Lisbon first.',
     tint: 'bg-amber-50 dark:bg-amber-950/30',
   },
   {
-    emoji: '❤️',
+    icon: Heart,
     title: 'Save & shortlist',
     body: 'Heart the places that catch your eye and build a shortlist you can come back to anytime — no account needed.',
     example: 'Example: save Kyoto and Banff, then compare their forecasts side by side.',
     tint: 'bg-rose-50 dark:bg-rose-950/30',
   },
   {
-    emoji: '✨',
+    icon: Sparkles,
     title: 'AI itineraries',
     body: 'Coming soon: Claude plans your days around your dates, interests, and the live forecast — with a budget summary and smart tips.',
     example: 'Example: “4 days in Kyoto in November, temples + food, under $900.”',
@@ -39,24 +57,24 @@ const FEATURES = [
   },
 ]
 
-const TRIP_TYPES = [
+const TRIP_TYPES: { icon: ComponentType<{ className?: string }>; title: string; body: string }[] = [
   {
-    emoji: '👨‍👩‍👧‍👦',
+    icon: Users,
     title: 'Family getaways',
     body: 'Balanced days for all ages — nature, easy walks, and food everyone will actually eat.',
   },
   {
-    emoji: '💞',
+    icon: Heart,
     title: 'Couples trips',
     body: 'Romantic escapes without the stress: sunset spots, quiet districts, memorable dinners.',
   },
   {
-    emoji: '🚗',
+    icon: CarFront,
     title: 'Road trips',
     body: 'Scenic routes optimized as you go — with the map view built into every destination.',
   },
   {
-    emoji: '🌏',
+    icon: Route,
     title: 'Multi-city',
     body: 'Chain destinations with tag-based similarity: if you loved Banff, meet Queenstown.',
   },
@@ -86,11 +104,11 @@ const TESTIMONIALS = [
 const FAQS = [
   {
     q: 'What is Travel Rec?',
-    a: 'An AI-powered travel discovery platform. Today you can search destinations, filter by travel style, check live weather, and save a shortlist. AI-generated itineraries and a Claude travel assistant are next on the roadmap.',
+    a: 'An AI-powered travel discovery platform. Today you can search destinations, filter by travel style, check live weather, book simulated stays, and get personalized recommendations. AI-generated itineraries and a Claude travel assistant are next on the roadmap.',
   },
   {
     q: 'Is it free to use?',
-    a: 'Yes. Exploring destinations, weather forecasts, and shortlists are free. No account is required for any current feature.',
+    a: 'Yes. Exploring destinations, weather forecasts, shortlists, and simulated bookings are free.',
   },
   {
     q: 'Where does the weather data come from?',
@@ -102,89 +120,100 @@ const FAQS = [
   },
   {
     q: 'How are “similar destinations” chosen?',
-    a: 'By travel-style overlap: destinations sharing the most tags (and, soon, embedding similarity) rank highest. It is how you hop from Banff to Queenstown.',
+    a: 'By semantic similarity: destinations and stays are embedded into vectors, so places that feel alike rank together — it is how you hop from Kyoto to Chiang Mai.',
   },
   {
     q: 'Is my shortlist stored on a server?',
-    a: 'Not yet — it lives in your browser (localStorage). When accounts arrive, you will be able to sync and share it.',
+    a: 'Not yet — it lives in your browser (localStorage). Sign in to sync preferences, recommendations, and bookings.',
   },
 ]
+
+function useGalleryRadius(): number {
+  const [radius, setRadius] = useState(() =>
+    Math.min(620, Math.max(300, window.innerWidth * 0.4)),
+  )
+  useEffect(() => {
+    const onResize = () => setRadius(Math.min(620, Math.max(300, window.innerWidth * 0.4)))
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+  return radius
+}
 
 export default function LandingPage() {
   const { data: destinations, isPending } = useQuery({
     queryKey: ['destinations', ''],
     queryFn: () => getDestinations(100),
   })
+  const radius = useGalleryRadius()
 
   const guides = (destinations ?? []).slice(0, 4)
-  const inspirations = (destinations ?? []).slice(0, 20)
-  const aspects = ['aspect-[3/4]', 'aspect-square', 'aspect-[4/5]', 'aspect-[3/2]']
-
-  const globeMarkers = useMemo<GlobeMarker[] | undefined>(
+  const galleryItems = useMemo<GalleryItem[]>(
     () =>
-      destinations?.map((d) => ({
-        id: String(d.id),
-        location: [d.lat, d.lng] as [number, number],
-        size: 0.03 + 0.05 * d.popularity_score,
+      (destinations ?? []).slice(0, 10).map((d) => ({
+        title: d.name,
+        subtitle: d.country,
+        image: d.image_url ?? '',
+        href: `/destinations/${d.id}`,
       })),
     [destinations],
   )
 
   return (
     <main>
-      {/* ── Hero ─────────────────────────────────────────────── */}
+      {/* ── Hero: copy + circular gallery ────────────────────── */}
       <section className="relative overflow-hidden">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 bg-gradient-to-b from-sky-100/80 via-transparent to-transparent dark:from-sky-950/40"
         />
-        <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-4 pb-14 pt-14 lg:grid-cols-2 lg:gap-8 lg:pb-20 lg:pt-16">
-          <div className="text-center lg:text-left">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-200 bg-white px-4 py-1.5 text-sm font-medium text-sky-700 shadow-sm dark:border-sky-800 dark:bg-gray-900 dark:text-sky-300">
-              ✨ AI-powered trip discovery
+        <div className="relative mx-auto max-w-4xl px-4 pt-16 text-center sm:pt-20">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-200 bg-white px-4 py-1.5 text-sm font-medium text-sky-700 shadow-sm dark:border-sky-800 dark:bg-gray-900 dark:text-sky-300">
+            <Sparkles className="h-4 w-4" aria-hidden /> AI-powered trip discovery
+          </span>
+          <h1 className="mt-6 text-5xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl">
+            The{' '}
+            <span className="bg-gradient-to-r from-sky-500 to-indigo-600 bg-clip-text text-transparent">
+              AI trip planner
+            </span>{' '}
+            for your next adventure
+          </h1>
+          <p className="mx-auto mt-5 max-w-2xl text-lg text-gray-600 dark:text-gray-300">
+            Smarter than endless tabs: search destinations by vibe, check live weather at a
+            glance, shortlist favorites — and soon, let Claude plan your days.
+          </p>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <Link
+              to="/explore"
+              className="rounded-full bg-gray-900 px-7 py-3.5 font-semibold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-gray-700 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200"
+            >
+              Start exploring
+            </Link>
+            <a
+              href="#features"
+              className="rounded-full border border-gray-300 bg-white px-7 py-3.5 font-semibold text-gray-800 shadow-sm transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:hover:bg-gray-800"
+            >
+              How it works
+            </a>
+          </div>
+          <p className="mt-6 flex items-center justify-center gap-1.5 text-sm text-gray-500 dark:text-gray-400">
+            <span aria-hidden className="flex text-amber-400">
+              {Array.from({ length: 5 }, (_, i) => (
+                <Star key={i} className="h-3.5 w-3.5 fill-current" />
+              ))}
             </span>
-            <h1 className="mt-6 text-5xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl">
-              The{' '}
-              <span className="bg-gradient-to-r from-sky-500 to-indigo-600 bg-clip-text text-transparent">
-                AI trip planner
-              </span>{' '}
-              for your next adventure
-            </h1>
-            <p className="mx-auto mt-5 max-w-xl text-lg text-gray-600 dark:text-gray-300 lg:mx-0">
-              Smarter than endless tabs: search destinations by vibe, check live weather at
-              a glance, shortlist favorites — and soon, let Claude plan your days.
-            </p>
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
-              <Link
-                to="/explore"
-                className="rounded-full bg-gray-900 px-7 py-3.5 font-semibold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-gray-700 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200"
-              >
-                ⛰️ Start exploring
-              </Link>
-              <a
-                href="#features"
-                className="rounded-full border border-gray-300 bg-white px-7 py-3.5 font-semibold text-gray-800 shadow-sm transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:hover:bg-gray-800"
-              >
-                How it works
-              </a>
-            </div>
-            <p className="mt-6 text-sm text-gray-500 dark:text-gray-400">
-              <span aria-hidden className="text-amber-400">★★★★★</span> Live weather · 50
-              curated destinations · Zero sign-up
-            </p>
-          </div>
-
-          <div className="relative mx-auto w-full max-w-sm sm:max-w-md lg:max-w-lg">
-            <div
-              aria-hidden
-              className="absolute inset-4 rounded-full bg-sky-400/25 blur-3xl dark:bg-sky-500/15"
-            />
-            <GlobeLive markers={globeMarkers} className="relative" />
-            <p className="mt-3 text-center text-xs text-gray-400 dark:text-gray-500">
-              Every dot is a destination you can book today — drag to spin.
-            </p>
-          </div>
+            Live weather · 50 curated destinations · Zero sign-up
+          </p>
         </div>
+
+        <div className="relative mt-16 h-[400px] sm:mt-20 sm:h-[460px]">
+          {galleryItems.length > 0 && (
+            <CircularGallery items={galleryItems} radius={radius} autoRotateSpeed={0.05} />
+          )}
+        </div>
+        <p className="relative pb-8 text-center text-xs text-gray-400 dark:text-gray-500">
+          Scroll to spin the carousel — click any card to explore that destination.
+        </p>
       </section>
 
       {/* ── Features ─────────────────────────────────────────── */}
@@ -200,8 +229,11 @@ export default function LandingPage() {
           {FEATURES.map((f) => (
             <div key={f.title} className={`rounded-3xl p-7 ${f.tint}`}>
               <div className="flex items-center gap-3">
-                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-2xl shadow-sm dark:bg-gray-900" aria-hidden>
-                  {f.emoji}
+                <span
+                  className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm dark:bg-gray-900"
+                  aria-hidden
+                >
+                  <f.icon className="h-6 w-6 text-sky-600 dark:text-sky-400" />
                 </span>
                 <h3 className="text-lg font-bold tracking-tight">
                   {f.title}
@@ -231,7 +263,7 @@ export default function LandingPage() {
                 key={t.title}
                 className="rounded-3xl border border-gray-200 bg-gray-50 p-6 transition hover:-translate-y-0.5 hover:shadow-md dark:border-gray-800 dark:bg-gray-900"
               >
-                <span className="text-3xl" aria-hidden>{t.emoji}</span>
+                <t.icon className="h-7 w-7 text-sky-600 dark:text-sky-400" aria-hidden />
                 <h3 className="mt-3 font-bold tracking-tight">{t.title}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-300">{t.body}</p>
                 <Link
@@ -264,56 +296,33 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Inspirations masonry ─────────────────────────────── */}
-      {inspirations.length > 0 && (
-        <section className="bg-white py-16 dark:bg-gray-900/50">
-          <div className="mx-auto max-w-6xl px-4">
-            <h2 className="text-center text-3xl font-extrabold tracking-tight sm:text-4xl">
-              Journey <span className="text-sky-600 dark:text-sky-400">inspirations</span>
-            </h2>
-            <div className="mt-10 columns-2 gap-4 lg:columns-3 [&>*]:mb-4">
-              {inspirations.map((d, i) => (
-                <Link
-                  key={d.id}
-                  to={`/destinations/${d.id}`}
-                  className="group relative block break-inside-avoid overflow-hidden rounded-3xl"
-                >
-                  <DestinationImage
-                    destination={d}
-                    className={`w-full ${aspects[i % aspects.length]} transition duration-300 group-hover:scale-105`}
-                  />
-                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-4">
-                    <p className="font-bold text-white">Trip to {d.name}</p>
-                    <p className="text-xs text-gray-200">{d.country}</p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
       {/* ── Testimonials ─────────────────────────────────────── */}
-      <section className="mx-auto max-w-6xl px-4 py-16">
-        <h2 className="text-center text-3xl font-extrabold tracking-tight sm:text-4xl">
-          Don't take <span className="text-sky-600 dark:text-sky-400">our word</span> for it
-        </h2>
-        <div className="mt-10 grid gap-5 md:grid-cols-3">
-          {TESTIMONIALS.map((t) => (
-            <figure
-              key={t.name}
-              className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900"
-            >
-              <p aria-hidden className="text-amber-400">★★★★★</p>
-              <blockquote className="mt-3 leading-relaxed text-gray-700 dark:text-gray-300">
-                “{t.quote}”
-              </blockquote>
-              <figcaption className="mt-4 text-sm">
-                <span className="font-semibold">{t.name}</span>{' '}
-                <span className="text-gray-500 dark:text-gray-400">· {t.role}</span>
-              </figcaption>
-            </figure>
-          ))}
+      <section className="bg-white py-16 dark:bg-gray-900/50">
+        <div className="mx-auto max-w-6xl px-4">
+          <h2 className="text-center text-3xl font-extrabold tracking-tight sm:text-4xl">
+            Don't take <span className="text-sky-600 dark:text-sky-400">our word</span> for it
+          </h2>
+          <div className="mt-10 grid gap-5 md:grid-cols-3">
+            {TESTIMONIALS.map((t) => (
+              <figure
+                key={t.name}
+                className="rounded-3xl border border-gray-200 bg-gray-50 p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900"
+              >
+                <p aria-hidden className="flex text-amber-400">
+                  {Array.from({ length: 5 }, (_, i) => (
+                    <Star key={i} className="h-4 w-4 fill-current" />
+                  ))}
+                </p>
+                <blockquote className="mt-3 leading-relaxed text-gray-700 dark:text-gray-300">
+                  “{t.quote}”
+                </blockquote>
+                <figcaption className="mt-4 text-sm">
+                  <span className="font-semibold">{t.name}</span>{' '}
+                  <span className="text-gray-500 dark:text-gray-400">· {t.role}</span>
+                </figcaption>
+              </figure>
+            ))}
+          </div>
         </div>
       </section>
 

@@ -1,15 +1,16 @@
-import { useState } from 'react'
+import { useState, type ComponentType } from 'react'
 import { useNavigate } from 'react-router'
+import { Backpack, Building2, Hotel, House, Star } from 'lucide-react'
 import { useAuth } from '../lib/auth'
 import { trackInteraction } from '../lib/api'
 import type { Listing } from '../types/listing'
 import BookingModal from './BookingModal'
 
-const TYPE_LABELS: Record<string, string> = {
-  hotel: '🏨 Hotel',
-  apartment: '🏢 Apartment',
-  hostel: '🎒 Hostel',
-  villa: '🏡 Villa',
+const TYPES: Record<string, { icon: ComponentType<{ className?: string }>; label: string }> = {
+  hotel: { icon: Hotel, label: 'Hotel' },
+  apartment: { icon: Building2, label: 'Apartment' },
+  hostel: { icon: Backpack, label: 'Hostel' },
+  villa: { icon: House, label: 'Villa' },
 }
 
 export default function ListingCard({ listing }: { listing: Listing }) {
@@ -39,11 +40,21 @@ export default function ListingCard({ listing }: { listing: Listing }) {
             className="h-full w-full object-cover"
           />
         )}
-        <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-gray-800 shadow-sm backdrop-blur dark:bg-gray-900/80 dark:text-gray-100">
-          {TYPE_LABELS[listing.type] ?? listing.type}
+        <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-gray-800 shadow-sm backdrop-blur dark:bg-gray-900/80 dark:text-gray-100">
+          {(() => {
+            const t = TYPES[listing.type]
+            return t ? (
+              <>
+                <t.icon className="h-3.5 w-3.5" aria-hidden /> {t.label}
+              </>
+            ) : (
+              listing.type
+            )
+          })()}
         </span>
-        <span className="absolute right-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-gray-800 shadow-sm backdrop-blur dark:bg-gray-900/80 dark:text-gray-100">
-          ★ {listing.rating.toFixed(1)}
+        <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-gray-800 shadow-sm backdrop-blur dark:bg-gray-900/80 dark:text-gray-100">
+          <Star className="h-3 w-3 fill-amber-400 text-amber-400" aria-hidden />
+          {listing.rating.toFixed(1)}
         </span>
       </div>
       <div className="p-4">
