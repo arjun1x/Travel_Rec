@@ -5,6 +5,7 @@ from app.api.deps import get_current_user
 from app.core.db import get_db
 from app.models import User, UserPreference
 from app.schemas.auth import PreferencesRead, PreferencesUpdate, UserRead
+from app.services.recommendations import invalidate_feed
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -39,4 +40,5 @@ async def update_preferences(
         setattr(prefs, key, value)
     await db.commit()
     await db.refresh(prefs)
+    await invalidate_feed(user.id)
     return prefs

@@ -1,5 +1,12 @@
 import type { Destination, Weather } from '../types/destination'
-import type { ListingFilters, ListingsPage } from '../types/listing'
+import type { Listing, ListingFilters, ListingsPage } from '../types/listing'
+import { authFetch } from './auth'
+
+export interface RecommendationItem {
+  listing: Listing
+  destination: Destination
+  score: number
+}
 
 async function fetchJson<T>(url: string): Promise<T> {
   const response = await fetch(url)
@@ -40,4 +47,20 @@ export function getListings(
   if (filters.guests) params.set('guests', String(filters.guests))
   if (filters.max_price) params.set('max_price', String(filters.max_price))
   return fetchJson(`/api/listings?${params}`)
+}
+
+export async function getRecommendations(limit = 20): Promise<RecommendationItem[]> {
+  const res = await authFetch(`/api/recommendations?limit=${limit}`)
+  if (!res.ok) throw new Error(`Could not load recommendations (${res.status})`)
+  const data = await res.json()
+  return data.items
+}
+
+/** Fire-and-forget engagement tracking; silently no-ops when signed out. */
+export function trackInteraction(listingId: number, type: 'view' | 'click' | 'save' | 'book'): void {
+  void authFetch('/api/interactions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ listing_id: listingId, type }),
+  }).catch(() => {})
 }

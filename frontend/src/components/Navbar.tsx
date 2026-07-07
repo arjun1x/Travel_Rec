@@ -27,6 +27,11 @@ export default function Navbar() {
           <NavLink to="/explore" className={linkClass}>
             Explore
           </NavLink>
+          {isAuthed && (
+            <NavLink to="/foryou" className={linkClass}>
+              For you
+            </NavLink>
+          )}
           <NavLink to="/saved" className={linkClass}>
             Saved
             {ids.length > 0 && (
