@@ -11,7 +11,7 @@ export default function Footer() {
           </p>
           <p className="mt-3 max-w-xs text-sm leading-relaxed text-gray-400">
             AI-powered trip discovery — search destinations, check live weather, and
-            (soon) let Claude plan your days.
+            let Claude plan your days.
           </p>
         </div>
         <div>

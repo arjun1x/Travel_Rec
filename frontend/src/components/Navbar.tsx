@@ -38,6 +38,11 @@ export default function Navbar() {
               Trips
             </NavLink>
           )}
+          {user?.is_admin && (
+            <NavLink to="/admin" className={linkClass}>
+              Admin
+            </NavLink>
+          )}
           <NavLink to="/saved" className={linkClass}>
             Saved
             {ids.length > 0 && (

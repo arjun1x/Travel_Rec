@@ -7,6 +7,7 @@ import DestinationPage from './pages/DestinationPage'
 import ForYouPage from './pages/ForYouPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
+import AdminPage from './pages/AdminPage'
 import ProfilePage from './pages/ProfilePage'
 import TripsPage from './pages/TripsPage'
 
@@ -23,6 +24,7 @@ const router = createBrowserRouter([
       { path: '/login', element: <LoginPage /> },
       { path: '/register', element: <RegisterPage /> },
       { path: '/profile', element: <ProfilePage /> },
+      { path: '/admin', element: <AdminPage /> },
     ],
   },
 ])

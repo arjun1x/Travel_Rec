@@ -153,9 +153,10 @@ AMENITIES = [
     "spa", "pet-friendly", "washer", "balcony", "sea-view", "city-view", "hot-tub",
 ]
 DEMO_USERS = [
-    ("demo@travelrec.dev", "demo1234", "Demo Explorer"),
-    ("mia@travelrec.dev", "demo1234", "Mia Torres"),
-    ("leo@travelrec.dev", "demo1234", "Leo Novak"),
+    ("demo@travelrec.dev", "demo1234", "Demo Explorer", False),
+    ("mia@travelrec.dev", "demo1234", "Mia Torres", False),
+    ("leo@travelrec.dev", "demo1234", "Leo Novak", False),
+    ("admin@travelrec.dev", "admin1234", "Site Admin", True),
 ]
 INTERACTION_TYPES = [("view", 0.70), ("click", 0.15), ("save", 0.10), ("book", 0.05)]
 
@@ -240,24 +241,31 @@ async def main() -> None:
             await session.commit()
             print(f"listings: {len(listings)} inserted")
 
-        # -- demo users -------------------------------------------------------
-        demo_emails = [email for email, _, _ in DEMO_USERS]
+        # -- demo users: insert any that are missing --------------------------
+        demo_emails = [email for email, _, _, _ in DEMO_USERS]
         existing_demos = list(
             (await session.execute(select(User).where(User.email.in_(demo_emails)))).scalars()
         )
-        if existing_demos:
-            print(f"demo users: {len(existing_demos)} already present — skipping")
-            demo_users = existing_demos
-        else:
-            demo_users = [
-                User(email=email, hashed_password=hash_password(pw), name=name)
-                for email, pw, name in DEMO_USERS
-            ]
-            session.add_all(demo_users)
+        existing_emails = {u.email for u in existing_demos}
+        new_users = [
+            User(
+                email=email,
+                hashed_password=hash_password(pw),
+                name=name,
+                is_admin=is_admin,
+            )
+            for email, pw, name, is_admin in DEMO_USERS
+            if email not in existing_emails
+        ]
+        if new_users:
+            session.add_all(new_users)
             await session.commit()
-            for u in demo_users:
+            for u in new_users:
                 await session.refresh(u)
-            print(f"demo users: {len(demo_users)} inserted (password: demo1234)")
+            print(f"demo users: {len(new_users)} inserted")
+        else:
+            print(f"demo users: {len(existing_demos)} already present — skipping")
+        demo_users = existing_demos + new_users
 
         # -- interactions: synthetic engagement, weighted by listing rating ---
         interaction_count = (
