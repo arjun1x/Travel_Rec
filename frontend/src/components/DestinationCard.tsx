@@ -19,7 +19,7 @@ export default function DestinationCard({ destination }: { destination: Destinat
           <WeatherBadge destinationId={destination.id} />
           <SaveButton destinationId={destination.id} />
         </div>
-        {destination.popularity_score >= 0.85 && (
+        {destination.popularity_score >= 0.9 && (
           <span className="absolute left-3 top-3 rounded-full bg-amber-400/95 px-2.5 py-1 text-xs font-semibold text-amber-950 shadow-sm">
             ★ Trending
           </span>

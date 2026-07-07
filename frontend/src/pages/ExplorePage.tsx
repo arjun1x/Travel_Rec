@@ -1,8 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { getDestinations, searchDestinations } from '../lib/api'
 import CardSkeleton from '../components/CardSkeleton'
 import DestinationCard from '../components/DestinationCard'
+
+// Leaflet stays out of the main bundle
+const ExploreMap = lazy(() => import('../components/ExploreMap'))
 
 export default function ExplorePage() {
   const [input, setInput] = useState('')
@@ -15,8 +18,8 @@ export default function ExplorePage() {
   }, [input])
 
   const { data, isPending, isError, error } = useQuery({
-    queryKey: ['destinations', query],
-    queryFn: () => (query ? searchDestinations(query) : getDestinations()),
+    queryKey: ['destinations', query, 100],
+    queryFn: () => (query ? searchDestinations(query, 100) : getDestinations(100)),
   })
 
   const allTags = useMemo(() => {
@@ -98,25 +101,40 @@ export default function ExplorePage() {
         )}
       </div>
 
-      <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {isPending && Array.from({ length: 6 }, (_, i) => <CardSkeleton key={i} />)}
-        {!isPending && results.map((d) => <DestinationCard key={d.id} destination={d} />)}
-      </div>
+      {/* list + map split view */}
+      <div className="mt-5 gap-6 lg:grid lg:grid-cols-[1fr_400px]">
+        <div>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            {isPending && Array.from({ length: 6 }, (_, i) => <CardSkeleton key={i} />)}
+            {!isPending && results.map((d) => <DestinationCard key={d.id} destination={d} />)}
+          </div>
 
-      {isError && (
-        <div className="mt-10 rounded-xl border border-red-200 bg-red-50 p-6 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
-          Could not load destinations: {error.message}
+          {isError && (
+            <div className="mt-10 rounded-xl border border-red-200 bg-red-50 p-6 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
+              Could not load destinations: {error.message}
+            </div>
+          )}
+          {!isPending && !isError && results.length === 0 && (
+            <div className="mt-10 rounded-xl border border-gray-200 bg-white p-10 text-center dark:border-gray-800 dark:bg-gray-900">
+              <p className="text-3xl" aria-hidden>🧳</p>
+              <p className="mt-2 font-medium">No destinations match</p>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Try a different search{activeTags.size > 0 && ' or clear the tag filters'}.
+              </p>
+            </div>
+          )}
         </div>
-      )}
-      {!isPending && !isError && results.length === 0 && (
-        <div className="mt-10 rounded-xl border border-gray-200 bg-white p-10 text-center dark:border-gray-800 dark:bg-gray-900">
-          <p className="text-3xl" aria-hidden>🧳</p>
-          <p className="mt-2 font-medium">No destinations match</p>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Try a different search{activeTags.size > 0 && ' or clear the tag filters'}.
-          </p>
-        </div>
-      )}
+
+        <aside className="hidden lg:block">
+          <div className="sticky top-20 h-[calc(100vh-6rem)]">
+            <Suspense
+              fallback={<div className="h-full w-full animate-pulse rounded-2xl bg-gray-200 dark:bg-gray-800" />}
+            >
+              <ExploreMap destinations={results} />
+            </Suspense>
+          </div>
+        </aside>
+      </div>
     </main>
   )
 }

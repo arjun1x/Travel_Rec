@@ -5,6 +5,7 @@ import { getDestination } from '../lib/api'
 import DestinationImage from '../components/DestinationImage'
 import SaveButton from '../components/SaveButton'
 import SimilarRail from '../components/SimilarRail'
+import StaysSection from '../components/StaysSection'
 import WeatherPanel from '../components/WeatherPanel'
 
 // Leaflet is heavy — load the map chunk only when a detail page renders
@@ -116,6 +117,8 @@ export default function DestinationPage() {
           <WeatherPanel destinationId={destination.id} />
         </aside>
       </div>
+
+      <StaysSection destinationId={destination.id} />
 
       <SimilarRail destinationId={destination.id} />
     </main>
