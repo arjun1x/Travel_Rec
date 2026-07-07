@@ -1,5 +1,9 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router'
+import { useAuth } from '../lib/auth'
+import { trackInteraction } from '../lib/api'
 import type { Listing } from '../types/listing'
+import BookingModal from './BookingModal'
 
 const TYPE_LABELS: Record<string, string> = {
   hotel: '🏨 Hotel',
@@ -10,6 +14,18 @@ const TYPE_LABELS: Record<string, string> = {
 
 export default function ListingCard({ listing }: { listing: Listing }) {
   const [imageFailed, setImageFailed] = useState(false)
+  const [booking, setBooking] = useState(false)
+  const { isAuthed } = useAuth()
+  const navigate = useNavigate()
+
+  const onBook = () => {
+    if (!isAuthed) {
+      navigate('/login')
+      return
+    }
+    trackInteraction(listing.id, 'click')
+    setBooking(true)
+  }
 
   return (
     <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900">
@@ -37,11 +53,20 @@ export default function ListingCard({ listing }: { listing: Listing }) {
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           Sleeps {listing.capacity} · {listing.amenities.slice(0, 3).join(' · ')}
         </p>
-        <p className="mt-2">
-          <span className="text-lg font-bold">${Math.round(listing.price_per_night)}</span>
-          <span className="text-sm text-gray-500 dark:text-gray-400"> / night</span>
-        </p>
+        <div className="mt-3 flex items-center justify-between">
+          <p>
+            <span className="text-lg font-bold">${Math.round(listing.price_per_night)}</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400"> / night</span>
+          </p>
+          <button
+            onClick={onBook}
+            className="rounded-full bg-sky-600 px-4 py-1.5 text-sm font-semibold text-white transition hover:bg-sky-700"
+          >
+            Book
+          </button>
+        </div>
       </div>
+      {booking && <BookingModal listing={listing} onClose={() => setBooking(false)} />}
     </div>
   )
 }

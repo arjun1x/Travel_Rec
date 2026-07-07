@@ -8,6 +8,7 @@ import ForYouPage from './pages/ForYouPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import ProfilePage from './pages/ProfilePage'
+import TripsPage from './pages/TripsPage'
 
 const router = createBrowserRouter([
   {
@@ -17,6 +18,7 @@ const router = createBrowserRouter([
       { path: '/explore', element: <ExplorePage /> },
       { path: '/saved', element: <SavedPage /> },
       { path: '/foryou', element: <ForYouPage /> },
+      { path: '/trips', element: <TripsPage /> },
       { path: '/destinations/:id', element: <DestinationPage /> },
       { path: '/login', element: <LoginPage /> },
       { path: '/register', element: <RegisterPage /> },

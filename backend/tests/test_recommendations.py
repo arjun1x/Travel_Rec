@@ -1,4 +1,4 @@
-from app.services.recommendations import price_fit, tag_affinity
+from app.services.recommendations import cosine_similarity, price_fit, tag_affinity
 
 
 def test_price_fit_neutral_without_budget() -> None:
@@ -24,6 +24,13 @@ def test_price_fit_decays_below_min() -> None:
 
 def test_tag_affinity_empty_profile_is_zero() -> None:
     assert tag_affinity(["beach", "island"], {}) == 0.0
+
+
+def test_cosine_similarity() -> None:
+    assert cosine_similarity([1, 0], [1, 0]) == 1.0
+    assert cosine_similarity([1, 0], [0, 1]) == 0.0
+    assert cosine_similarity([1, 0], [-1, 0]) == -1.0
+    assert cosine_similarity([0, 0], [1, 1]) == 0.0  # zero vector guard
 
 
 def test_tag_affinity_full_overlap_beats_partial() -> None:

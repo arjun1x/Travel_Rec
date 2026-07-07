@@ -11,6 +11,22 @@ async def get_destination(db: AsyncSession, destination_id: int) -> Destination 
 async def similar_destinations(
     db: AsyncSession, destination: Destination, limit: int = 4
 ) -> list[Destination]:
+    # recs v2: semantic ranking via pgvector cosine distance when embeddings exist
+    if destination.embedding is not None:
+        result = await db.execute(
+            select(Destination)
+            .where(
+                Destination.id != destination.id,
+                Destination.embedding.isnot(None),
+            )
+            .order_by(Destination.embedding.cosine_distance(destination.embedding))
+            .limit(limit)
+        )
+        semantic = list(result.scalars())
+        if semantic:
+            return semantic
+
+    # v1 fallback: tag overlap, then popularity
     result = await db.execute(
         select(Destination).where(
             Destination.id != destination.id,

@@ -1,15 +1,18 @@
-"""Recommendations v1 — heuristic scoring.
+"""Recommendations — heuristic scoring (v1) blended with embeddings (v2).
 
-score = 0.30 * destination popularity
-      + 0.25 * listing rating (normalized)
-      + 0.20 * price fit vs the user's budget preferences
-      + 0.25 * tag affinity (explicit trip styles + implicit interaction profile)
+Without a profile embedding:
+    score = 0.30 popularity + 0.25 rating + 0.20 price fit + 0.25 tag affinity
+With one (user has interactions on embedded listings):
+    score = 0.25 popularity + 0.20 rating + 0.15 price fit + 0.20 tag affinity
+          + 0.20 cosine(profile embedding, listing embedding)
 
-Feeds are cached in Redis for a short TTL and invalidated when the user
-records a new interaction.
+The profile embedding is the interaction-weighted average of embeddings of
+listings the user engaged with. Feeds are cached in Redis for a short TTL and
+invalidated on new interactions or preference changes.
 """
 
 import json
+import math
 from collections import defaultdict
 
 from sqlalchemy import select
@@ -55,19 +58,34 @@ def tag_affinity(tags: list[str], profile: dict[str, float]) -> float:
     return min(1.0, hit / max(sum(top), 1e-9))
 
 
+def cosine_similarity(a, b) -> float:
+    dot = sum(x * y for x, y in zip(a, b))
+    norm_a = math.sqrt(sum(x * x for x in a))
+    norm_b = math.sqrt(sum(x * x for x in b))
+    if norm_a == 0 or norm_b == 0:
+        return 0.0
+    return dot / (norm_a * norm_b)
+
+
 def score_listing(
     listing: Listing,
     destination: Destination,
     profile: dict[str, float],
     budget_min: float | None,
     budget_max: float | None,
+    profile_vec: list[float] | None = None,
 ) -> float:
-    return (
+    base = (
         0.30 * destination.popularity_score
         + 0.25 * (listing.rating / 5.0)
         + 0.20 * price_fit(listing.price_per_night, budget_min, budget_max)
         + 0.25 * tag_affinity(destination.tags, profile)
     )
+    if profile_vec is None or listing.embedding is None:
+        return base
+    # renormalize heuristics to 0.8 and give the semantic match the last 0.2
+    semantic = max(0.0, cosine_similarity(profile_vec, listing.embedding))
+    return 0.8 * base + 0.2 * semantic
 
 
 async def build_tag_profile(db: AsyncSession, user: User) -> dict[str, float]:
@@ -97,12 +115,38 @@ async def build_tag_profile(db: AsyncSession, user: User) -> dict[str, float]:
     return dict(profile)
 
 
+async def build_profile_embedding(db: AsyncSession, user: User) -> list[float] | None:
+    """Interaction-weighted average of embeddings of listings the user engaged with."""
+    rows = list(
+        await db.execute(
+            select(Interaction.type, Listing.embedding)
+            .join(Listing, Interaction.listing_id == Listing.id)
+            .where(Interaction.user_id == user.id, Listing.embedding.isnot(None))
+        )
+    )
+    if not rows:
+        return None
+    acc: list[float] | None = None
+    total_weight = 0.0
+    for itype, embedding in rows:
+        weight = INTERACTION_WEIGHTS.get(itype, 1.0)
+        total_weight += weight
+        if acc is None:
+            acc = [weight * x for x in embedding]
+        else:
+            for i, x in enumerate(embedding):
+                acc[i] += weight * x
+    assert acc is not None
+    return [x / total_weight for x in acc]
+
+
 async def get_feed(db: AsyncSession, user: User, limit: int = 20) -> list[dict]:
     cached = await redis_client.get(_cache_key(user.id))
     if cached:
         return json.loads(cached)[:limit]
 
     profile = await build_tag_profile(db, user)
+    profile_vec = await build_profile_embedding(db, user)
     prefs = await db.get(UserPreference, user.id)
     budget_min = prefs.budget_min if prefs else None
     budget_max = prefs.budget_max if prefs else None
@@ -114,7 +158,9 @@ async def get_feed(db: AsyncSession, user: User, limit: int = 20) -> list[dict]:
     )
     ranked = sorted(
         listings,
-        key=lambda l: score_listing(l, l.destination, profile, budget_min, budget_max),
+        key=lambda l: score_listing(
+            l, l.destination, profile, budget_min, budget_max, profile_vec
+        ),
         reverse=True,
     )
 
@@ -129,7 +175,14 @@ async def get_feed(db: AsyncSession, user: User, limit: int = 20) -> list[dict]:
                 listing=ListingRead.model_validate(listing),
                 destination=DestinationRead.model_validate(listing.destination),
                 score=round(
-                    score_listing(listing, listing.destination, profile, budget_min, budget_max),
+                    score_listing(
+                        listing,
+                        listing.destination,
+                        profile,
+                        budget_min,
+                        budget_max,
+                        profile_vec,
+                    ),
                     4,
                 ),
             ).model_dump()
@@ -146,8 +199,20 @@ async def invalidate_feed(user_id: int) -> None:
 
 
 async def similar_listings(db: AsyncSession, listing: Listing, limit: int = 8) -> list[Listing]:
-    """Stays like this one: same or tag-overlapping destinations, ranked by
-    tag overlap, rating, and price similarity."""
+    """Stays like this one — semantic (pgvector cosine) when embeddings exist,
+    else tag overlap + rating + price similarity."""
+    if listing.embedding is not None:
+        stmt = (
+            select(Listing)
+            .where(Listing.id != listing.id, Listing.embedding.isnot(None))
+            .order_by(Listing.embedding.cosine_distance(listing.embedding))
+            .limit(limit)
+            .options(selectinload(Listing.destination))
+        )
+        semantic = list((await db.execute(stmt)).scalars())
+        if semantic:
+            return semantic
+
     target_dest = listing.destination
     target_tags = set(target_dest.tags)
     stmt = (

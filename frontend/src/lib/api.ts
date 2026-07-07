@@ -1,3 +1,4 @@
+import type { Booking, BookingDetail } from '../types/booking'
 import type { Destination, Weather } from '../types/destination'
 import type { Listing, ListingFilters, ListingsPage } from '../types/listing'
 import { authFetch } from './auth'
@@ -54,6 +55,39 @@ export async function getRecommendations(limit = 20): Promise<RecommendationItem
   if (!res.ok) throw new Error(`Could not load recommendations (${res.status})`)
   const data = await res.json()
   return data.items
+}
+
+export async function createBooking(input: {
+  listing_id: number
+  check_in: string
+  check_out: string
+  guests: number
+}): Promise<Booking> {
+  const res = await authFetch('/api/bookings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => null)
+    throw new Error(body?.detail ?? `Could not create booking (${res.status})`)
+  }
+  return res.json()
+}
+
+export async function getBookings(): Promise<BookingDetail[]> {
+  const res = await authFetch('/api/bookings')
+  if (!res.ok) throw new Error(`Could not load trips (${res.status})`)
+  return res.json()
+}
+
+export async function transitionBooking(id: number, action: 'confirm' | 'cancel'): Promise<Booking> {
+  const res = await authFetch(`/api/bookings/${id}/${action}`, { method: 'POST' })
+  if (!res.ok) {
+    const body = await res.json().catch(() => null)
+    throw new Error(body?.detail ?? `Could not ${action} booking`)
+  }
+  return res.json()
 }
 
 /** Fire-and-forget engagement tracking; silently no-ops when signed out. */

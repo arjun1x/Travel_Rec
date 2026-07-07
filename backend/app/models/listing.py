@@ -1,3 +1,4 @@
+from pgvector.sqlalchemy import Vector
 from sqlalchemy import ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -21,5 +22,6 @@ class Listing(Base):
     amenities: Mapped[list[str]] = mapped_column(ARRAY(String), default=list)
     images: Mapped[list[str]] = mapped_column(ARRAY(String), default=list)
     rating: Mapped[float] = mapped_column(default=0.0)
+    embedding: Mapped[list[float] | None] = mapped_column(Vector(), nullable=True)
 
     destination: Mapped[Destination] = relationship()
