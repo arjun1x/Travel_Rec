@@ -1,10 +1,15 @@
 import { createBrowserRouter, RouterProvider } from 'react-router'
-import SearchPage from './pages/SearchPage'
+import Layout from './components/Layout'
+import HomePage from './pages/HomePage'
+import DestinationPage from './pages/DestinationPage'
 
 const router = createBrowserRouter([
   {
-    path: '/',
-    element: <SearchPage />,
+    element: <Layout />,
+    children: [
+      { path: '/', element: <HomePage /> },
+      { path: '/destinations/:id', element: <DestinationPage /> },
+    ],
   },
 ])
 

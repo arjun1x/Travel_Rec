@@ -1,10 +1,9 @@
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
-from redis.asyncio import Redis
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import settings
+from app.core.cache import redis_client
 from app.core.db import get_db
 
 router = APIRouter(tags=["health"])
@@ -25,14 +24,11 @@ async def health_ready(db: AsyncSession = Depends(get_db)) -> JSONResponse:
     except Exception as exc:
         checks["db"] = f"error: {exc.__class__.__name__}"
 
-    redis = Redis.from_url(settings.redis_url)
     try:
-        await redis.ping()
+        await redis_client.ping()
         checks["redis"] = "ok"
     except Exception as exc:
         checks["redis"] = f"error: {exc.__class__.__name__}"
-    finally:
-        await redis.aclose()
 
     healthy = all(v == "ok" for v in checks.values())
     return JSONResponse(status_code=200 if healthy else 503, content=checks)

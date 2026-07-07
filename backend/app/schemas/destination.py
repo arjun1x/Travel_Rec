@@ -11,4 +11,5 @@ class DestinationRead(BaseModel):
     lng: float
     description: str
     tags: list[str]
+    image_url: str | None
     popularity_score: float

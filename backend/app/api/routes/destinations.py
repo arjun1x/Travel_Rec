@@ -1,9 +1,11 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db
 from app.schemas.destination import DestinationRead
+from app.schemas.weather import WeatherRead
 from app.services import destinations as service
+from app.services.weather import WeatherUnavailableError, get_weather
 
 router = APIRouter(prefix="/destinations", tags=["destinations"])
 
@@ -23,3 +25,29 @@ async def search_destinations(
     db: AsyncSession = Depends(get_db),
 ) -> list[DestinationRead]:
     return await service.search_destinations(db, q=q, limit=limit)
+
+
+@router.get("/{destination_id}", response_model=DestinationRead)
+async def get_destination_detail(
+    destination_id: int,
+    db: AsyncSession = Depends(get_db),
+) -> DestinationRead:
+    destination = await service.get_destination(db, destination_id)
+    if destination is None:
+        raise HTTPException(status_code=404, detail="Destination not found")
+    return destination
+
+
+@router.get("/{destination_id}/weather", response_model=WeatherRead)
+async def get_destination_weather(
+    destination_id: int,
+    db: AsyncSession = Depends(get_db),
+) -> WeatherRead:
+    destination = await service.get_destination(db, destination_id)
+    if destination is None:
+        raise HTTPException(status_code=404, detail="Destination not found")
+    try:
+        weather = await get_weather(destination.id, destination.lat, destination.lng)
+    except WeatherUnavailableError:
+        raise HTTPException(status_code=502, detail="Weather service unavailable")
+    return WeatherRead.model_validate(weather)

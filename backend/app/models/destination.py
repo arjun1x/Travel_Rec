@@ -15,4 +15,5 @@ class Destination(Base):
     lng: Mapped[float]
     description: Mapped[str] = mapped_column(Text)
     tags: Mapped[list[str]] = mapped_column(ARRAY(String), default=list)
+    image_url: Mapped[str | None] = mapped_column(String(500))
     popularity_score: Mapped[float] = mapped_column(default=0.0)

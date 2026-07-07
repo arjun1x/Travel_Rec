@@ -4,6 +4,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import Destination
 
 
+async def get_destination(db: AsyncSession, destination_id: int) -> Destination | None:
+    return await db.get(Destination, destination_id)
+
+
 async def list_destinations(db: AsyncSession, limit: int = 20) -> list[Destination]:
     result = await db.execute(
         select(Destination).order_by(Destination.popularity_score.desc()).limit(limit)
