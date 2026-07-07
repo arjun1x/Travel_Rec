@@ -38,6 +38,18 @@ async def get_destination_detail(
     return destination
 
 
+@router.get("/{destination_id}/similar", response_model=list[DestinationRead])
+async def get_similar_destinations(
+    destination_id: int,
+    limit: int = Query(4, ge=1, le=12),
+    db: AsyncSession = Depends(get_db),
+) -> list[DestinationRead]:
+    destination = await service.get_destination(db, destination_id)
+    if destination is None:
+        raise HTTPException(status_code=404, detail="Destination not found")
+    return await service.similar_destinations(db, destination, limit=limit)
+
+
 @router.get("/{destination_id}/weather", response_model=WeatherRead)
 async def get_destination_weather(
     destination_id: int,

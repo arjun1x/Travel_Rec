@@ -1,9 +1,14 @@
+import { lazy, Suspense } from 'react'
 import { Link, useParams } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import { getDestination } from '../lib/api'
 import DestinationImage from '../components/DestinationImage'
-import DestinationMap from '../components/DestinationMap'
+import SaveButton from '../components/SaveButton'
+import SimilarRail from '../components/SimilarRail'
 import WeatherPanel from '../components/WeatherPanel'
+
+// Leaflet is heavy — load the map chunk only when a detail page renders
+const DestinationMap = lazy(() => import('../components/DestinationMap'))
 
 export default function DestinationPage() {
   const { id } = useParams<{ id: string }>()
@@ -51,6 +56,9 @@ export default function DestinationPage() {
       {/* Hero */}
       <div className="relative mt-4 overflow-hidden rounded-3xl">
         <DestinationImage destination={destination} className="h-72 w-full sm:h-96" />
+        <div className="absolute right-4 top-4">
+          <SaveButton destinationId={destination.id} size="lg" />
+        </div>
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent p-6">
           <h1 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
             {destination.name}
@@ -78,11 +86,17 @@ export default function DestinationPage() {
 
           <h2 className="mt-8 text-xl font-bold tracking-tight">On the map</h2>
           <div className="mt-3">
-            <DestinationMap
-              name={destination.name}
-              lat={destination.lat}
-              lng={destination.lng}
-            />
+            <Suspense
+              fallback={
+                <div className="h-72 w-full animate-pulse rounded-2xl bg-gray-200 dark:bg-gray-800" />
+              }
+            >
+              <DestinationMap
+                name={destination.name}
+                lat={destination.lat}
+                lng={destination.lng}
+              />
+            </Suspense>
           </div>
 
           {/* Coming soon: AI itinerary CTA */}
@@ -102,6 +116,8 @@ export default function DestinationPage() {
           <WeatherPanel destinationId={destination.id} />
         </aside>
       </div>
+
+      <SimilarRail destinationId={destination.id} />
     </main>
   )
 }

@@ -1,6 +1,7 @@
 import { Link } from 'react-router'
 import type { Destination } from '../types/destination'
 import DestinationImage from './DestinationImage'
+import SaveButton from './SaveButton'
 import WeatherBadge from './WeatherBadge'
 
 export default function DestinationCard({ destination }: { destination: Destination }) {
@@ -14,8 +15,9 @@ export default function DestinationCard({ destination }: { destination: Destinat
           destination={destination}
           className="h-full w-full transition duration-300 group-hover:scale-105"
         />
-        <div className="absolute right-3 top-3">
+        <div className="absolute right-3 top-3 flex items-center gap-2">
           <WeatherBadge destinationId={destination.id} />
+          <SaveButton destinationId={destination.id} />
         </div>
         {destination.popularity_score >= 0.85 && (
           <span className="absolute left-3 top-3 rounded-full bg-amber-400/95 px-2.5 py-1 text-xs font-semibold text-amber-950 shadow-sm">

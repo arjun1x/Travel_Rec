@@ -23,3 +23,7 @@ export function getDestination(id: number | string): Promise<Destination> {
 export function getWeather(id: number | string): Promise<Weather> {
   return fetchJson(`/api/destinations/${id}/weather`)
 }
+
+export function getSimilar(id: number | string, limit = 4): Promise<Destination[]> {
+  return fetchJson(`/api/destinations/${id}/similar?limit=${limit}`)
+}

@@ -8,6 +8,24 @@ async def get_destination(db: AsyncSession, destination_id: int) -> Destination 
     return await db.get(Destination, destination_id)
 
 
+async def similar_destinations(
+    db: AsyncSession, destination: Destination, limit: int = 4
+) -> list[Destination]:
+    result = await db.execute(
+        select(Destination).where(
+            Destination.id != destination.id,
+            Destination.tags.overlap(destination.tags),
+        )
+    )
+    candidates = list(result.scalars())
+    target_tags = set(destination.tags)
+
+    def score(candidate: Destination) -> tuple[int, float]:
+        return (len(target_tags & set(candidate.tags)), candidate.popularity_score)
+
+    return sorted(candidates, key=score, reverse=True)[:limit]
+
+
 async def list_destinations(db: AsyncSession, limit: int = 20) -> list[Destination]:
     result = await db.execute(
         select(Destination).order_by(Destination.popularity_score.desc()).limit(limit)
