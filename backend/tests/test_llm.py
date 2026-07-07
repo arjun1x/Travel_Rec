@@ -55,7 +55,11 @@ def test_prompt_includes_all_context() -> None:
 
 def test_get_client_requires_key(monkeypatch) -> None:
     from app.core import config
+    from app.services import llm as llm_module
 
     monkeypatch.setattr(config.settings, "anthropic_api_key", None)
+    monkeypatch.setattr(llm_module, "_client", None)
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("ANTHROPIC_AUTH_TOKEN", raising=False)
     with pytest.raises(LlmNotConfiguredError):
         get_client()

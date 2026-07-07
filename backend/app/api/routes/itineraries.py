@@ -7,7 +7,13 @@ from app.api.deps import get_current_user
 from app.core.config import settings
 from app.core.db import get_db
 from app.models import Destination, Itinerary, User
-from app.schemas.itinerary import ItineraryGenerateRequest, ItineraryRead
+from pydantic import BaseModel, Field
+
+from app.schemas.itinerary import ItineraryGenerateRequest, ItineraryPlan, ItineraryRead
+
+
+class DayRegenerateRequest(BaseModel):
+    instructions: str | None = Field(default=None, max_length=500)
 from app.services import llm
 from app.services.weather import WeatherUnavailableError, get_weather
 
@@ -99,6 +105,55 @@ async def generate_itinerary(
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+@router.patch("/{itinerary_id}/days/{day_index}", response_model=ItineraryRead)
+async def regenerate_itinerary_day(
+    itinerary_id: int,
+    day_index: int,
+    payload: DayRegenerateRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> ItineraryRead:
+    itinerary = (
+        await db.execute(
+            select(Itinerary).where(
+                Itinerary.id == itinerary_id, Itinerary.user_id == user.id
+            )
+        )
+    ).scalar_one_or_none()
+    if itinerary is None:
+        raise HTTPException(status_code=404, detail="Itinerary not found")
+
+    plan = ItineraryPlan.model_validate(itinerary.days)
+    if not 0 <= day_index < len(plan.days):
+        raise HTTPException(status_code=400, detail="Day index out of range")
+
+    try:
+        llm.get_client()
+        await llm.check_rate_limit(user.id, "itinerary")
+    except llm.LlmNotConfiguredError as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
+    except llm.RateLimitedError as exc:
+        raise HTTPException(status_code=429, detail=str(exc))
+
+    destination = await db.get(Destination, itinerary.destination_id)
+    new_day, usage = await llm.regenerate_day(
+        destination.name if destination else "the destination",
+        plan,
+        day_index,
+        payload.instructions,
+    )
+    plan.days[day_index] = new_day
+    plan.budget_total_usd = round(
+        sum(a.estimated_cost_usd for d in plan.days for a in d.activities), 2
+    )
+    itinerary.days = plan.model_dump()
+    itinerary.budget_total = plan.budget_total_usd
+    await db.commit()
+    await db.refresh(itinerary)
+    await llm.log_usage(db, user, "itinerary", settings.llm_model, usage)
+    return itinerary
 
 
 @router.get("", response_model=list[ItineraryRead])

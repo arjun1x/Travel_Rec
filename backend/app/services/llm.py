@@ -17,7 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.cache import redis_client
 from app.core.config import settings
 from app.models import Destination, LlmUsage, User
-from app.schemas.itinerary import ItineraryPlan
+from app.schemas.itinerary import DayPlan, ItineraryPlan
 
 _client: AsyncAnthropic | None = None
 
@@ -32,13 +32,25 @@ class RateLimitedError(Exception):
 
 def get_client() -> AsyncAnthropic:
     global _client
-    if not settings.anthropic_api_key:
-        raise LlmNotConfiguredError(
-            "ANTHROPIC_API_KEY is not set — add it to .env to enable AI features"
-        )
-    if _client is None:
+    if _client is not None:
+        return _client
+    if settings.anthropic_api_key:
         _client = AsyncAnthropic(api_key=settings.anthropic_api_key)
-    return _client
+        return _client
+    # fall back to the SDK's standard credential chain
+    # (ANTHROPIC_API_KEY / ANTHROPIC_AUTH_TOKEN env vars, `ant auth login` profile)
+    try:
+        candidate = AsyncAnthropic()
+        if getattr(candidate, "api_key", None) or getattr(candidate, "auth_token", None):
+            _client = candidate
+            return _client
+    except Exception:
+        pass
+    raise LlmNotConfiguredError(
+        "AI features need an Anthropic API key. Get one at console.anthropic.com, "
+        "put ANTHROPIC_API_KEY=sk-ant-... in the .env file at the repo root, "
+        "and restart the API server."
+    )
 
 
 async def check_rate_limit(user_id: int, action: str) -> None:
@@ -133,6 +145,41 @@ async def stream_itinerary(
     raw = next(block.text for block in message.content if block.type == "text")
     plan = ItineraryPlan.model_validate_json(raw)
     yield ("final", (plan, message.usage))
+
+
+async def regenerate_day(
+    destination_name: str,
+    plan: ItineraryPlan,
+    day_index: int,
+    instructions: str | None,
+) -> tuple[DayPlan, object]:
+    """Regenerate one day of an existing plan, keeping the rest as context."""
+    client = get_client()
+    target = plan.days[day_index]
+    prompt = (
+        f"Here is an existing itinerary for {destination_name}:\n"
+        f"{plan.model_dump_json()}\n\n"
+        f"Regenerate ONLY the day dated {target.date} with a fresh set of activities "
+        f"that do not repeat activities from the other days."
+        + (f"\nTraveler notes for this day: {instructions}" if instructions else "")
+    )
+    async with client.messages.stream(
+        model=settings.llm_model,
+        max_tokens=4096,
+        thinking={"type": "adaptive"},
+        output_config={"format": {"type": "json_schema", "schema": DayPlan.model_json_schema()}},
+        system=[
+            {
+                "type": "text",
+                "text": ITINERARY_SYSTEM,
+                "cache_control": {"type": "ephemeral"},
+            }
+        ],
+        messages=[{"role": "user", "content": prompt}],
+    ) as stream:
+        message = await stream.get_final_message()
+    raw = next(block.text for block in message.content if block.type == "text")
+    return DayPlan.model_validate_json(raw), message.usage
 
 
 # ── Travel assistant ──────────────────────────────────────────────────
