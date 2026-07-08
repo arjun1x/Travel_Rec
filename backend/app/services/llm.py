@@ -117,6 +117,17 @@ def build_itinerary_prompt(
     return "\n".join(parts)
 
 
+def _extract_text(message) -> str:
+    """Pull the text block out of a response, with a real error when absent
+    (e.g. thinking consumed the whole max_tokens budget)."""
+    for block in message.content:
+        if block.type == "text" and block.text:
+            return block.text
+    raise RuntimeError(
+        f"Model returned no text (stop_reason={message.stop_reason}) — try shorter dates"
+    )
+
+
 async def stream_itinerary(
     user_prompt: str,
 ) -> AsyncIterator[tuple[str, object]]:
@@ -126,7 +137,9 @@ async def stream_itinerary(
 
     async with client.messages.stream(
         model=settings.llm_model,
-        max_tokens=16000,
+        # generous headroom: adaptive thinking + a 14-day JSON plan both draw
+        # from this budget; a tight cap ends with thinking-only output
+        max_tokens=32000,
         thinking={"type": "adaptive"},
         output_config={"format": {"type": "json_schema", "schema": schema}},
         system=[
@@ -142,8 +155,7 @@ async def stream_itinerary(
             yield ("delta", text)
         message = await stream.get_final_message()
 
-    raw = next(block.text for block in message.content if block.type == "text")
-    plan = ItineraryPlan.model_validate_json(raw)
+    plan = ItineraryPlan.model_validate_json(_extract_text(message))
     yield ("final", (plan, message.usage))
 
 
@@ -165,7 +177,7 @@ async def regenerate_day(
     )
     async with client.messages.stream(
         model=settings.llm_model,
-        max_tokens=4096,
+        max_tokens=16000,
         thinking={"type": "adaptive"},
         output_config={"format": {"type": "json_schema", "schema": DayPlan.model_json_schema()}},
         system=[
@@ -178,8 +190,7 @@ async def regenerate_day(
         messages=[{"role": "user", "content": prompt}],
     ) as stream:
         message = await stream.get_final_message()
-    raw = next(block.text for block in message.content if block.type == "text")
-    return DayPlan.model_validate_json(raw), message.usage
+    return DayPlan.model_validate_json(_extract_text(message)), message.usage
 
 
 # ── Travel assistant ──────────────────────────────────────────────────
