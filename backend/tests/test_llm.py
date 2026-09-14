@@ -1,7 +1,12 @@
 import pytest
 
 from app.schemas.itinerary import ItineraryPlan
-from app.services.llm import LlmNotConfiguredError, build_itinerary_prompt, get_client
+from app.services.llm import (
+    LlmNotConfiguredError,
+    _reconcile_budget,
+    build_itinerary_prompt,
+    get_client,
+)
 from app.models import Destination
 
 
@@ -63,3 +68,22 @@ def test_get_client_requires_key(monkeypatch) -> None:
     monkeypatch.delenv("ANTHROPIC_AUTH_TOKEN", raising=False)
     with pytest.raises(LlmNotConfiguredError):
         get_client()
+
+
+def test_budget_total_is_derived_from_activities() -> None:
+    plan = ItineraryPlan.model_validate(
+        {
+            "days": [
+                {"date": "2026-08-01", "title": "A", "activities": [
+                    {"time": "09:00", "name": "x", "description": "d", "estimated_cost_usd": 12.5},
+                    {"time": "12:00", "name": "y", "description": "d", "estimated_cost_usd": 30},
+                ]},
+                {"date": "2026-08-02", "title": "B", "activities": [
+                    {"time": "09:00", "name": "z", "description": "d", "estimated_cost_usd": 7.25},
+                ]},
+            ],
+            "budget_total_usd": 999,  # whatever the model claimed
+            "budget_tips": [],
+        }
+    )
+    assert _reconcile_budget(plan).budget_total_usd == 49.75

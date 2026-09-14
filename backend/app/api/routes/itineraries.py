@@ -1,3 +1,5 @@
+import time
+
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
@@ -69,9 +71,16 @@ async def generate_itinerary(
     )
 
     async def event_stream():
+        last_ping = 0.0
         try:
             async for kind, data in llm.stream_itinerary(prompt):
-                if kind == "delta":
+                if kind == "thinking":
+                    # a heartbeat, not the reasoning itself; one per second is plenty
+                    now = time.monotonic()
+                    if now - last_ping >= 1.0:
+                        last_ping = now
+                        yield llm.sse({"type": "thinking"})
+                elif kind == "delta":
                     yield llm.sse({"type": "delta", "text": data})
                 else:
                     plan, usage = data

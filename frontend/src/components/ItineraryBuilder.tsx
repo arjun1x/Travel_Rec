@@ -6,9 +6,10 @@ import { useAuth } from '../lib/auth'
 import { useQueryClient } from '@tanstack/react-query'
 import { DEMO_MODE } from '../lib/config'
 import { localToday } from '../lib/discovery'
+import { countStartedDays, extractCompletedDays } from '../lib/itinerary-stream'
 import type { Destination } from '../types/destination'
-import type { ItineraryPlan } from '../types/itinerary'
-import ItineraryView from './ItineraryView'
+import type { DayPlan, ItineraryPlan } from '../types/itinerary'
+import ItineraryView, { DayCard } from './ItineraryView'
 
 const INTEREST_OPTIONS = [
   'food', 'culture', 'history', 'nature', 'adventure', 'nightlife',
@@ -34,8 +35,22 @@ export default function ItineraryBuilder({ destination }: { destination: Destina
   const [interests, setInterests] = useState<Set<string>>(new Set())
   const [budget, setBudget] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [daysStarted, setDaysStarted] = useState(0)
   const [plan, setPlan] = useState<ItineraryPlan | null>(null)
+
+  // live progress while the plan streams in
+  const [plannedDays, setPlannedDays] = useState(0)
+  const [daysStarted, setDaysStarted] = useState(0)
+  const [liveDays, setLiveDays] = useState<DayPlan[]>([])
+  const [thinking, setThinking] = useState(false)
+  const [startedAt, setStartedAt] = useState<number | null>(null)
+  const [elapsed, setElapsed] = useState(0)
+  useEffect(() => {
+    if (phase !== 'generating' || startedAt == null) return
+    const tick = () => setElapsed(Math.round((Date.now() - startedAt) / 1000))
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [phase, startedAt])
 
   const toggleInterest = (interest: string) =>
     setInterests((prev) => {
@@ -44,6 +59,11 @@ export default function ItineraryBuilder({ destination }: { destination: Destina
       else if (next.size < 10) next.add(interest)
       return next
     })
+
+  const cancel = () => {
+    controller.current?.abort()
+    setPhase('form')
+  }
 
   const generate = async () => {
     if (!isAuthed) {
@@ -59,7 +79,11 @@ export default function ItineraryBuilder({ destination }: { destination: Destina
     const active = controller.current
     setPhase('generating')
     setError(null)
+    setPlannedDays(dayCount)
     setDaysStarted(0)
+    setLiveDays([])
+    setThinking(false)
+    setStartedAt(Date.now())
     let accumulated = ''
     let completed = false
     try {
@@ -70,9 +94,14 @@ export default function ItineraryBuilder({ destination }: { destination: Destina
         interests: [...interests],
         budget_usd: budget ? +budget : null,
       }, active.signal)) {
-        if (event.type === 'delta') {
+        if (event.type === 'thinking') {
+          setThinking(true)
+        } else if (event.type === 'delta') {
+          setThinking(false)
           accumulated += event.text as string
-          setDaysStarted((accumulated.match(/"date"/g) ?? []).length)
+          setDaysStarted(countStartedDays(accumulated))
+          const ready = extractCompletedDays(accumulated)
+          setLiveDays((prev) => (prev.length === ready.length ? prev : ready))
         } else if (event.type === 'done') {
           completed = true
           if (!event.plan || !Array.isArray((event.plan as ItineraryPlan).days)) throw new Error('The itinerary was incomplete. Please try again.')
@@ -118,6 +147,18 @@ export default function ItineraryBuilder({ destination }: { destination: Destina
     )
   }
 
+  const currentDay = Math.min(Math.max(daysStarted, liveDays.length + 1), plannedDays || 1)
+  const status = daysStarted > 0
+    ? `Planning day ${currentDay} of ${plannedDays}…`
+    : thinking ? 'Sketching the shape of your trip…' : 'Reaching the planner…'
+  const detail = daysStarted > 0
+    ? liveDays.length > 0 ? `${liveDays.length} of ${plannedDays} days ready — they appear below as they finish.` : 'The first day is on its way.'
+    : 'Balancing your interests, budget, and the weather forecast.'
+  // finished days count fully, the one being written counts half; never show "done" early
+  const progress = plannedDays > 0
+    ? Math.min(96, Math.max(4, ((liveDays.length + (daysStarted > liveDays.length ? 0.5 : 0)) / plannedDays) * 100))
+    : 4
+
   return (
     <section className="mt-12 rounded-3xl border border-sky-200 bg-sky-50/60 p-6 dark:border-sky-900 dark:bg-sky-950/30">
       <h2 className="flex items-center gap-2 text-xl font-extrabold tracking-tight">
@@ -130,14 +171,26 @@ export default function ItineraryBuilder({ destination }: { destination: Destina
 
       {DEMO_MODE && <p className="service-note mt-4">Itinerary generation is available with the connected backend. You can explore the planning options here.</p>}
       {phase === 'generating' ? (
-        <div className="mt-6 flex flex-col items-center gap-3 rounded-2xl border border-sky-200 bg-white p-10 text-center dark:border-sky-900 dark:bg-gray-900">
-          <Loader2 className="h-8 w-8 animate-spin text-sky-500" aria-hidden />
-          <p className="font-semibold">
-            {daysStarted > 0 ? `Planning day ${daysStarted}…` : 'Thinking about your trip…'}
-          </p>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Weaving in the weather forecast and your interests.
-          </p>
+        <div className="mt-6 space-y-4">
+          <div className="rounded-2xl border border-sky-200 bg-white p-5 dark:border-sky-900 dark:bg-gray-900">
+            <div className="flex items-center gap-4">
+              <Loader2 className="h-7 w-7 shrink-0 animate-spin text-sky-500" aria-hidden />
+              <div className="min-w-0 flex-1" role="status" aria-live="polite">
+                <p className="font-semibold">{status}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{detail}</p>
+              </div>
+              <span className="shrink-0 font-mono text-xs tabular-nums text-gray-400" aria-label={`${elapsed} seconds elapsed`}>{elapsed}s</span>
+            </div>
+            <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800" aria-hidden>
+              <div className="h-full rounded-full bg-sky-500 transition-[width] duration-500" style={{ width: `${progress}%` }} />
+            </div>
+            <button onClick={cancel} className="mt-4 text-sm font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400">
+              Cancel
+            </button>
+          </div>
+          {liveDays.map((day, i) => (
+            <DayCard key={day.date} day={day} index={i} />
+          ))}
         </div>
       ) : (
         <div className="mt-5 space-y-4">

@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -14,7 +16,10 @@ class Settings(BaseSettings):
     anthropic_api_key: str | None = None
     llm_model: str = "claude-sonnet-4-6"  # itinerary generation + assistant
     llm_model_light: str = "claude-haiku-4-5"  # cheap/lightweight tasks
-    prompt_version: str = "v1"
+    prompt_version: str = "v2"
+    # adaptive-thinking effort for itinerary calls; "low" keeps reasoning to a
+    # few hundred tokens instead of ~10K, which is most of the wall-clock time
+    llm_effort: Literal["low", "medium", "high", "xhigh", "max"] = "low"
     llm_rate_limit_per_hour: int = 20
 
     jwt_secret: str = "dev-secret-change-me"

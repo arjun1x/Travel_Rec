@@ -87,7 +87,8 @@ ITINERARY_SYSTEM = """You are the expert travel planner behind Travel Rec, an AI
 You produce realistic, delightful day-by-day itineraries. Rules:
 - Ground every activity in real, well-known places at the destination; include lat/lng when you are confident of the location, otherwise omit them.
 - Respect the traveler's dates exactly: one day plan per date, in order.
-- Pace days realistically: 3-5 activities per day, sensible travel time between them, meals included with local specialities.
+- Pace days realistically: 3-4 activities per day, sensible travel time between them, meals included with local specialities.
+- Keep every description to one or two tight sentences (about 30 words): what it is, why it is worth it, one practical tip. No filler.
 - Estimate costs honestly in USD per person (activities, meals, local transport — exclude flights and lodging).
 - If a budget is given, keep budget_total_usd within it and say in budget_tips how you did; if the plan must exceed it, say so plainly in budget_tips.
 - Use the provided weather forecast: put outdoor highlights on the best-weather days and have indoor alternatives on wet days.
@@ -117,6 +118,14 @@ def build_itinerary_prompt(
     return "\n".join(parts)
 
 
+def _reconcile_budget(plan: ItineraryPlan) -> ItineraryPlan:
+    """The total is derived, never trusted: keep it equal to the activity sum."""
+    plan.budget_total_usd = round(
+        sum(a.estimated_cost_usd for d in plan.days for a in d.activities), 2
+    )
+    return plan
+
+
 def _extract_text(message) -> str:
     """Pull the text block out of a response, with a real error when absent
     (e.g. thinking consumed the whole max_tokens budget)."""
@@ -131,7 +140,8 @@ def _extract_text(message) -> str:
 async def stream_itinerary(
     user_prompt: str,
 ) -> AsyncIterator[tuple[str, object]]:
-    """Yield ("delta", text) chunks, then ("final", (plan, usage))."""
+    """Yield ("thinking", chars) while the model reasons, ("delta", text) as
+    the JSON streams, then ("final", (plan, usage))."""
     client = get_client()
     schema = ItineraryPlan.model_json_schema()
 
@@ -141,7 +151,10 @@ async def stream_itinerary(
         # from this budget; a tight cap ends with thinking-only output
         max_tokens=32000,
         thinking={"type": "adaptive"},
-        output_config={"format": {"type": "json_schema", "schema": schema}},
+        output_config={
+            "format": {"type": "json_schema", "schema": schema},
+            "effort": settings.llm_effort,
+        },
         system=[
             {
                 "type": "text",
@@ -151,11 +164,16 @@ async def stream_itinerary(
         ],
         messages=[{"role": "user", "content": user_prompt}],
     ) as stream:
-        async for text in stream.text_stream:
-            yield ("delta", text)
+        async for event in stream:
+            # reasoning happens before any JSON appears; surface it so the UI
+            # can show real progress instead of a silent spinner
+            if event.type == "thinking":
+                yield ("thinking", len(event.thinking))
+            elif event.type == "text":
+                yield ("delta", event.text)
         message = await stream.get_final_message()
 
-    plan = ItineraryPlan.model_validate_json(_extract_text(message))
+    plan = _reconcile_budget(ItineraryPlan.model_validate_json(_extract_text(message)))
     yield ("final", (plan, message.usage))
 
 
@@ -179,7 +197,10 @@ async def regenerate_day(
         model=settings.llm_model,
         max_tokens=16000,
         thinking={"type": "adaptive"},
-        output_config={"format": {"type": "json_schema", "schema": DayPlan.model_json_schema()}},
+        output_config={
+            "format": {"type": "json_schema", "schema": DayPlan.model_json_schema()},
+            "effort": settings.llm_effort,
+        },
         system=[
             {
                 "type": "text",
