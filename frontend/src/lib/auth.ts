@@ -2,6 +2,7 @@
 // API, all components kept in sync via useSyncExternalStore.
 
 import { useSyncExternalStore } from 'react'
+import { DEMO_MODE } from './config'
 
 export interface AuthUser {
   id: number
@@ -25,9 +26,10 @@ const KEY = 'travelrec:auth'
 const listeners = new Set<() => void>()
 
 function loadTokens(): AuthState {
+  if (DEMO_MODE) return { access: null, refresh: null, user: null }
   try {
     const parsed = JSON.parse(localStorage.getItem(KEY) ?? 'null')
-    if (parsed?.access && parsed?.refresh) {
+    if (typeof parsed?.access === 'string' && typeof parsed?.refresh === 'string' && parsed.access && parsed.refresh) {
       return { access: parsed.access, refresh: parsed.refresh, user: null }
     }
   } catch {
@@ -74,52 +76,65 @@ async function hydrateUser(): Promise<void> {
 }
 
 export async function login(email: string, password: string): Promise<void> {
+  if (DEMO_MODE) throw new Error('Accounts require the connected backend.')
   const res = await fetch('/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
+    signal: AbortSignal.timeout(15000),
   })
   if (!res.ok) throw new Error(await parseError(res, 'Could not sign in'))
   const tokens: TokenPair = await res.json()
   setState({ access: tokens.access_token, refresh: tokens.refresh_token, user: null })
-  await hydrateUser()
+  await hydrateUser().catch(() => { /* Account remains signed in; profile can retry hydration. */ })
 }
 
 export async function register(email: string, password: string, name: string): Promise<void> {
+  if (DEMO_MODE) throw new Error('Accounts require the connected backend.')
   const res = await fetch('/api/auth/register', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password, name }),
+    signal: AbortSignal.timeout(15000),
   })
   if (!res.ok) throw new Error(await parseError(res, 'Could not create account'))
   const tokens: TokenPair = await res.json()
   setState({ access: tokens.access_token, refresh: tokens.refresh_token, user: null })
-  await hydrateUser()
+  await hydrateUser().catch(() => { /* Account remains signed in; profile can retry hydration. */ })
 }
 
 export function logout(): void {
   setState({ access: null, refresh: null, user: null })
 }
 
+let refreshing: Promise<boolean> | null = null
 async function tryRefresh(): Promise<boolean> {
   if (!state.refresh) return false
-  const res = await fetch('/api/auth/refresh', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refresh_token: state.refresh }),
-  })
-  if (!res.ok) return false
-  const tokens: TokenPair = await res.json()
-  setState({ ...state, access: tokens.access_token, refresh: tokens.refresh_token })
-  return true
+  if (refreshing) return refreshing
+  const refreshToken = state.refresh
+  refreshing = (async () => {
+    try {
+      const res = await fetch('/api/auth/refresh', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: refreshToken }), signal: AbortSignal.timeout(15000),
+      })
+      if (!res.ok || state.refresh !== refreshToken) return false
+      const tokens: TokenPair = await res.json()
+      setState({ ...state, access: tokens.access_token, refresh: tokens.refresh_token })
+      return true
+    } catch { return false }
+    finally { refreshing = null }
+  })()
+  return refreshing
 }
 
 /** fetch with Authorization header; retries once through a token refresh on 401. */
 export async function authFetch(url: string, init: RequestInit = {}): Promise<Response> {
-  const withAuth = (): RequestInit => ({
-    ...init,
-    headers: { ...init.headers, Authorization: `Bearer ${state.access}` },
-  })
+  const withAuth = (): RequestInit => {
+    const headers = new Headers(init.headers)
+    if (state.access) headers.set('Authorization', `Bearer ${state.access}`)
+    return { ...init, headers, signal: init.signal ?? AbortSignal.timeout(30000) }
+  }
   let res = await fetch(url, withAuth())
   if (res.status === 401 && (await tryRefresh())) {
     res = await fetch(url, withAuth())
@@ -138,5 +153,5 @@ export function useAuth() {
 
 // hydrate the user on app load when tokens survived a reload
 if (state.access) {
-  void hydrateUser()
+  void hydrateUser().catch(() => { /* An unavailable API must not create an unhandled rejection. */ })
 }

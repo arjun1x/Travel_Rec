@@ -10,6 +10,9 @@ import RegisterPage from './pages/RegisterPage'
 import AdminPage from './pages/AdminPage'
 import ProfilePage from './pages/ProfilePage'
 import TripsPage from './pages/TripsPage'
+import CollectionsPage from './pages/CollectionsPage'
+import HelpPage from './pages/HelpPage'
+import NotFoundPage from './pages/NotFoundPage'
 
 const router = createBrowserRouter([
   {
@@ -17,6 +20,8 @@ const router = createBrowserRouter([
     children: [
       { path: '/', element: <LandingPage /> },
       { path: '/explore', element: <ExplorePage /> },
+      { path: '/collections', element: <CollectionsPage /> },
+      { path: '/help', element: <HelpPage /> },
       { path: '/saved', element: <SavedPage /> },
       { path: '/foryou', element: <ForYouPage /> },
       { path: '/trips', element: <TripsPage /> },
@@ -25,6 +30,7 @@ const router = createBrowserRouter([
       { path: '/register', element: <RegisterPage /> },
       { path: '/profile', element: <ProfilePage /> },
       { path: '/admin', element: <AdminPage /> },
+      { path: '*', element: <NotFoundPage /> },
     ],
   },
 ])

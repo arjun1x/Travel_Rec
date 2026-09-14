@@ -3,6 +3,8 @@ import { useQuery } from '@tanstack/react-query'
 import { getListings } from '../lib/api'
 import type { ListingFilters, ListingSort, ListingType } from '../types/listing'
 import ListingCard from './ListingCard'
+import { DEMO_MODE } from '../lib/config'
+import { ErrorState } from './QueryState'
 
 const SHOWN = 6
 
@@ -13,9 +15,9 @@ export default function StaysSection({ destinationId }: { destinationId: number 
   const [filters, setFilters] = useState<ListingFilters>({ sort: 'rating' })
   const [showAll, setShowAll] = useState(false)
 
-  const { data, isPending } = useQuery({
+  const { data, isPending, isError, refetch } = useQuery({
     queryKey: ['listings', destinationId, filters],
-    queryFn: () => getListings(destinationId, filters),
+    queryFn: () => getListings(destinationId, filters, 100),
   })
 
   const items = data?.items ?? []
@@ -23,6 +25,7 @@ export default function StaysSection({ destinationId }: { destinationId: number 
 
   return (
     <section className="mt-12">
+      <p className="service-note mb-5">{DEMO_MODE ? "Stays are available with the connected backend. Preview mode doesn’t invent property availability or prices." : "Explore sample properties and try a simulated reservation. No payment is taken and no real room is reserved."}</p>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <h2 className="text-2xl font-extrabold tracking-tight">
           Places to <span className="text-sky-600 dark:text-sky-400">stay</span>
@@ -90,6 +93,11 @@ export default function StaysSection({ destinationId }: { destinationId: number 
         </div>
       </div>
 
+      <div className="mt-5">
+        <span className="mb-2 block text-xs text-gray-500">The little essentials</span>
+        <div className="filter-chips">{['wifi', 'pool', 'kitchen', 'breakfast', 'parking', 'air-conditioning', 'pet-friendly', 'sea-view'].map((amenity) => <button key={amenity} className={filters.amenities?.includes(amenity) ? 'filter-chip active' : 'filter-chip'} aria-pressed={filters.amenities?.includes(amenity) ?? false} onClick={() => setFilters((f) => ({ ...f, amenities: f.amenities?.includes(amenity) ? f.amenities.filter((a) => a !== amenity) : [...(f.amenities ?? []), amenity] }))}>{amenity.replaceAll('-', ' ')}</button>)}</div>
+      </div>
+      {isError && <div className="mt-6"><ErrorState title="We couldn’t load the stays." onRetry={() => void refetch()} /></div>}
       <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {isPending &&
           Array.from({ length: 3 }, (_, i) => (
@@ -100,7 +108,7 @@ export default function StaysSection({ destinationId }: { destinationId: number 
         ))}
       </div>
 
-      {!isPending && items.length === 0 && (
+      {!DEMO_MODE && !isPending && !isError && items.length === 0 && (
         <p className="mt-6 rounded-xl border border-gray-200 bg-white p-6 text-center text-sm text-gray-500 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400">
           No stays match these filters.
         </p>

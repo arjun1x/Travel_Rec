@@ -1,32 +1,42 @@
-# React + TypeScript + Vite
+# Travel Rec frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Travel Rec is an editorial travel discovery interface for finding places, saving a shortlist, planning trips, and exploring stays. The frontend is a React 19 + TypeScript + Vite app with a responsive visual system, curated local photography, a copper compass mark, and an optional 3D compass sculpture.
 
-Currently, two official plugins are available:
+## Run the frontend
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+From this directory:
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+npm run demo
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+The demo mode opens at <http://localhost:5173> with a local sample destination catalog and no backend dependency. Demo mode is designed for reviewing the interface; accounts, live weather, stays, assistant chat, and itinerary generation require the API.
+
+For the full application, start the backend described in the repository root README, then run:
+
+```bash
+npm run dev
+```
+
+The Vite development server proxies `/api` to `http://localhost:8000` by default. Set `API_PROXY_TARGET` when the API runs elsewhere.
+
+## Useful commands
+
+```bash
+npm run build       # production build (live API mode)
+npm run build:demo  # production build with the local catalog
+npm run test        # discovery and SSE parser tests
+npm run lint        # Oxlint
+```
+
+`VITE_DEMO_MODE=true` enables the preview catalog. Public variables are safe to ship to the browser; keep server secrets such as JWT and Anthropic keys in the backend environment.
+
+## Frontend structure
+
+- `src/pages` contains landing, explore, collections, destination, saved, trips, profile, and auth screens.
+- `src/components` contains the navigation shell, destination and stay cards, filters, map/globe views, modals, and streaming assistant/itinerary UI.
+- `src/lib` contains API/auth clients, demo data, shortlist persistence, discovery filters, photography mapping, and SSE parsing.
+- `public/images` contains the small set of locally bundled editorial destination photos used by the cards and hero.
+
+The frontend is intentionally usable without image hosts or a running API in demo mode, while live mode keeps the existing backend contracts intact.

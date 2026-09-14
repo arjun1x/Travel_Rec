@@ -8,6 +8,7 @@ import type { BookingDetail, BookingStatus } from '../types/booking'
 import type { Itinerary } from '../types/itinerary'
 import DestinationImage from '../components/DestinationImage'
 import ItineraryView from '../components/ItineraryView'
+import { ErrorState } from '../components/QueryState'
 
 const STATUS_STYLES: Record<BookingStatus, string> = {
   held: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
@@ -92,6 +93,7 @@ function ItineraryRow({ itinerary }: { itinerary: Itinerary }) {
     <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
       <button
         onClick={() => setExpanded((v) => !v)}
+        aria-expanded={expanded}
         className="flex w-full items-center justify-between gap-3 text-left"
       >
         <div className="flex items-center gap-2">
@@ -122,19 +124,19 @@ function ItineraryRow({ itinerary }: { itinerary: Itinerary }) {
 }
 
 export default function TripsPage() {
-  const { isAuthed } = useAuth()
-  const { data, isPending } = useQuery({
-    queryKey: ['bookings'],
+  const { isAuthed, user } = useAuth()
+  const { data, isPending, isError, refetch } = useQuery({
+    queryKey: ['bookings', user?.id],
     queryFn: getBookings,
     enabled: isAuthed,
   })
-  const { data: itineraries } = useQuery({
-    queryKey: ['itineraries'],
+  const { data: itineraries, isPending: plansPending, isError: plansError, refetch: retryPlans } = useQuery({
+    queryKey: ['itineraries', user?.id],
     queryFn: getItineraries,
     enabled: isAuthed,
   })
 
-  if (!isAuthed) return <Navigate to="/login" replace />
+  if (!isAuthed) return <Navigate to="/login" state={{ from: "/trips" }} replace />
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-10">
@@ -142,7 +144,7 @@ export default function TripsPage() {
         Your <span className="text-sky-600 dark:text-sky-400">trips</span>
       </h1>
       <p className="mt-2 text-gray-500 dark:text-gray-400">
-        Holds expire nowhere in this demo — confirm or cancel anytime.
+        Your day-by-day plans and simulated stay reservations, all in one place.
       </p>
 
       <div className="mt-8 space-y-4">
@@ -153,6 +155,9 @@ export default function TripsPage() {
         {data?.map((booking) => <TripRow key={booking.id} booking={booking} />)}
       </div>
 
+      {isError && <ErrorState title="We couldn’t load your stays." onRetry={() => void refetch()} />}
+      {plansError && <ErrorState title="We couldn’t load your itineraries." onRetry={() => void retryPlans()} />}
+      {plansPending && <p className="mt-6 text-sm text-gray-500" role="status">Loading your itineraries…</p>}
       {itineraries && itineraries.length > 0 && (
         <>
           <h2 className="mt-12 flex items-center gap-2 text-xl font-bold tracking-tight">
@@ -167,7 +172,7 @@ export default function TripsPage() {
         </>
       )}
 
-      {data && data.length === 0 && (
+      {data && data.length === 0 && !plansPending && !plansError && !itineraries?.length && (
         <div className="mt-12 rounded-3xl border border-dashed border-gray-300 bg-white p-14 text-center dark:border-gray-700 dark:bg-gray-900">
           <Luggage aria-hidden className="mx-auto h-10 w-10 text-gray-300 dark:text-gray-600" />
           <h2 className="mt-3 text-xl font-bold">No trips yet</h2>

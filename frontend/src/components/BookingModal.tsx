@@ -4,6 +4,8 @@ import { PartyPopper } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createBooking } from '../lib/api'
 import type { Listing } from '../types/listing'
+import Modal from './Modal'
+import { localToday } from '../lib/discovery'
 
 interface Props {
   listing: Listing
@@ -14,7 +16,7 @@ const inputClass =
   'w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 dark:border-gray-700 dark:bg-gray-950 dark:focus:ring-sky-900'
 
 export default function BookingModal({ listing, onClose }: Props) {
-  const today = new Date().toISOString().slice(0, 10)
+  const today = localToday()
   const [checkIn, setCheckIn] = useState('')
   const [checkOut, setCheckOut] = useState('')
   const [guests, setGuests] = useState(1)
@@ -33,17 +35,7 @@ export default function BookingModal({ listing, onClose }: Props) {
   })
 
   return (
-    <div
-      className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-      role="dialog"
-      aria-modal="true"
-      aria-label={`Book ${listing.title}`}
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl dark:bg-gray-900"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <Modal title="Plan your stay" onClose={onClose}>
         {mutation.isSuccess ? (
           <div className="py-6 text-center">
             <PartyPopper aria-hidden className="mx-auto h-10 w-10 text-sky-500" />
@@ -76,20 +68,13 @@ export default function BookingModal({ listing, onClose }: Props) {
                   ${Math.round(listing.price_per_night)} / night · sleeps {listing.capacity}
                 </p>
               </div>
-              <button
-                onClick={onClose}
-                aria-label="Close"
-                className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
-              >
-                ✕
-              </button>
             </div>
 
             <form
               className="mt-5 space-y-4"
               onSubmit={(e) => {
                 e.preventDefault()
-                mutation.mutate()
+                if (checkIn >= today && nights > 0 && guests >= 1 && guests <= listing.capacity) mutation.mutate()
               }}
             >
               <div className="grid grid-cols-2 gap-3">
@@ -97,7 +82,7 @@ export default function BookingModal({ listing, onClose }: Props) {
                   <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Check-in</span>
                   <input
                     type="date" required min={today} value={checkIn}
-                    onChange={(e) => setCheckIn(e.target.value)} className={inputClass}
+                    onChange={(e) => { setCheckIn(e.target.value); if (checkOut && e.target.value >= checkOut) setCheckOut('') }} className={inputClass}
                   />
                 </label>
                 <label className="block">
@@ -139,10 +124,10 @@ export default function BookingModal({ listing, onClose }: Props) {
 
               <button
                 type="submit"
-                disabled={mutation.isPending || nights === 0}
+                disabled={mutation.isPending || nights === 0 || checkIn < today}
                 className="w-full rounded-full bg-gray-900 py-3 font-semibold text-white transition hover:bg-gray-700 disabled:opacity-50 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200"
               >
-                {mutation.isPending ? 'Placing hold…' : 'Place hold — free cancellation'}
+                {mutation.isPending ? 'Placing hold…' : 'Place a demo hold'}
               </button>
               <p className="text-center text-xs text-gray-400">
                 Simulated booking — no payment required.
@@ -150,7 +135,6 @@ export default function BookingModal({ listing, onClose }: Props) {
             </form>
           </>
         )}
-      </div>
-    </div>
+    </Modal>
   )
 }

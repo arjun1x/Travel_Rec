@@ -1,6 +1,6 @@
 # Travel Rec — AI-Powered Travel Recommendation Platform
 
-Full-stack platform for personalized travel recommendations and AI-generated itineraries. See [claude.md](claude.md) for the full spec and roadmap.
+Full-stack platform for personalized travel recommendations and AI-generated itineraries.
 
 **Stack:** FastAPI + SQLAlchemy 2 (async) + Alembic · PostgreSQL 16 (pgvector) · Redis 7 · Anthropic Claude API · React 19 + TypeScript + Vite + Tailwind v4 + TanStack Query
 
@@ -41,6 +41,18 @@ npm run dev
 Open http://localhost:5173. API docs: http://localhost:8000/docs.
 
 **Demo accounts:** `demo@travelrec.dev` / `demo1234` · admin: `admin@travelrec.dev` / `admin1234`
+
+## Frontend preview
+
+The redesigned frontend also includes a backend-free preview mode for reviewing the visual experience:
+
+```bash
+cd frontend
+npm install
+npm run demo
+```
+
+This uses a small local destination catalog and bundled editorial photos. Use `npm run dev` for the full API-connected experience; see [frontend/README.md](frontend/README.md) for the frontend commands and environment variables.
 
 ## Enable AI features (itineraries + assistant)
 

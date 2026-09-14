@@ -1,64 +1,12 @@
 import { Link } from 'react-router'
-import { Compass } from 'lucide-react'
+import { ArrowUpRight } from 'lucide-react'
+import BrandMark from './BrandMark'
 
 export default function Footer() {
-  return (
-    <footer className="mt-20 bg-gray-950 text-gray-300">
-      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:grid-cols-2 lg:grid-cols-4">
-        <div>
-          <p className="flex items-center gap-2 text-lg font-extrabold tracking-tight text-white">
-            <Compass aria-hidden className="h-5 w-5 text-sky-400" /> Travel Rec
-          </p>
-          <p className="mt-3 max-w-xs text-sm leading-relaxed text-gray-400">
-            AI-powered trip discovery — search destinations, check live weather, and
-            let Claude plan your days.
-          </p>
-        </div>
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-gray-500">Product</p>
-          <ul className="mt-3 space-y-2 text-sm">
-            <li><Link to="/explore" className="hover:text-white">Explore destinations</Link></li>
-            <li><Link to="/saved" className="hover:text-white">Saved trips</Link></li>
-            <li>
-              <Link to="/explore" className="hover:text-white">
-                AI itineraries
-              </Link>
-            </li>
-            <li><span className="text-gray-400">Travel assistant — bottom right</span></li>
-          </ul>
-        </div>
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-gray-500">Resources</p>
-          <ul className="mt-3 space-y-2 text-sm">
-            <li>
-              <a href="http://localhost:8000/docs" target="_blank" rel="noreferrer" className="hover:text-white">
-                API docs
-              </a>
-            </li>
-            <li><a href="/#faq" className="hover:text-white">FAQ</a></li>
-          </ul>
-        </div>
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-gray-500">Data</p>
-          <ul className="mt-3 space-y-2 text-sm">
-            <li>
-              <a href="https://open-meteo.com/" target="_blank" rel="noreferrer" className="hover:text-white">
-                Weather by Open-Meteo
-              </a>
-            </li>
-            <li>
-              <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer" className="hover:text-white">
-                Maps © OpenStreetMap
-              </a>
-            </li>
-          </ul>
-        </div>
-      </div>
-      <div className="border-t border-gray-800">
-        <p className="mx-auto max-w-6xl px-4 py-5 text-xs text-gray-500">
-          © 2026 Travel Rec. Built with FastAPI, React, and Claude.
-        </p>
-      </div>
-    </footer>
-  )
+  return <footer className="site-footer"><div className="footer-main page-width">
+    <div><Link to="/" className="wordmark"><BrandMark />travel<span>rec</span>.</Link><p>For the places you haven’t been.<br />And the person you’ll be when you get back.</p></div>
+    <div className="footer-links"><div><span>GO SOMEWHERE</span><Link to="/explore">Explore destinations</Link><Link to="/collections">Find your kind of trip</Link><Link to="/saved">Your saved places</Link></div>
+      <div><span>MAKE IT YOURS</span><Link to="/trips">My trips</Link><Link to="/profile">Travel preferences</Link><Link to="/help">Questions & answers</Link></div></div>
+    <Link to="/explore" className="footer-callout">Good things<br />are out there. <ArrowUpRight size={28} /></Link>
+  </div><div className="footer-bottom page-width"><span>© {new Date().getFullYear()} Travel Rec</span><span>Made for the curious.</span><div><a href="https://open-meteo.com/" target="_blank" rel="noreferrer">Weather by Open-Meteo</a><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap</a></div></div></footer>
 }

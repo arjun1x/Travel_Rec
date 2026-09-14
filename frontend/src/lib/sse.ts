@@ -1,36 +1,34 @@
-// POST + Server-Sent-Events reader on top of authFetch (EventSource can't
-// send Authorization headers or bodies, so we parse the stream ourselves).
-
 import { authFetch } from './auth'
+import { parseSseFrame, type SseEvent } from './sse-parser'
+export type { SseEvent } from './sse-parser'
 
-export interface SseEvent {
-  type: string
-  [key: string]: unknown
-}
-
-export async function* streamSSE(url: string, body: unknown): AsyncGenerator<SseEvent> {
-  const res = await authFetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
+export async function* streamSSE(url: string, body: unknown, signal?: AbortSignal): AsyncGenerator<SseEvent> {
+  const res = await authFetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal })
   if (!res.ok || !res.body) {
     const parsed = await res.json().catch(() => null)
-    throw new Error(parsed?.detail ?? `Request failed (${res.status})`)
+    throw new Error(typeof parsed?.detail === 'string' ? parsed.detail : `The service couldn’t complete this request (${res.status}).`)
   }
-
   const reader = res.body.getReader()
   const decoder = new TextDecoder()
   let buffer = ''
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
-    buffer += decoder.decode(value, { stream: true })
-    const chunks = buffer.split('\n\n')
-    buffer = chunks.pop() ?? ''
-    for (const chunk of chunks) {
-      const dataLine = chunk.split('\n').find((line) => line.startsWith('data: '))
-      if (dataLine) yield JSON.parse(dataLine.slice(6)) as SseEvent
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      buffer += done ? decoder.decode() : decoder.decode(value, { stream: true })
+      let boundary: RegExpExecArray | null
+      while ((boundary = /\r?\n\r?\n/.exec(buffer))) {
+        const event = parseSseFrame(buffer.slice(0, boundary.index))
+        buffer = buffer.slice(boundary.index + boundary[0].length)
+        if (event) yield event
+      }
+      if (done) {
+        const trailing = parseSseFrame(buffer)
+        if (trailing) yield trailing
+        break
+      }
     }
+  } finally {
+    await reader.cancel().catch(() => {})
+    reader.releaseLock()
   }
 }

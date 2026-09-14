@@ -67,7 +67,7 @@ function HBarChart({ rows }: { rows: { label: string; value: number }[] }) {
           </div>
           <div className="mt-1 h-2 rounded-full bg-gray-100 dark:bg-gray-800">
             <div
-              className="h-2 rounded-full bg-[#2a78d6] transition group-hover:opacity-80 dark:bg-[#3987e5]"
+              className="h-2 rounded-full bg-[#6b7c53] transition group-hover:opacity-80 dark:bg-[#9eae87]"
               style={{ width: `${(row.value / max) * 100}%` }}
             />
           </div>
@@ -92,7 +92,7 @@ function ColumnChart({ points, unit }: { points: { date: string; value: number }
           title={`${point.date}: ${point.value.toLocaleString()} ${unit}`}
         >
           <div
-            className="w-full max-w-8 rounded-t bg-[#2a78d6] transition group-hover:opacity-80 dark:bg-[#3987e5]"
+            className="w-full max-w-8 rounded-t bg-[#6b7c53] transition group-hover:opacity-80 dark:bg-[#9eae87]"
             style={{ height: `${Math.max((point.value / max) * 100, 3)}%` }}
           />
           <span className="mt-1.5 truncate text-[10px] text-gray-400">
@@ -107,12 +107,12 @@ function ColumnChart({ points, unit }: { points: { date: string; value: number }
 export default function AdminPage() {
   const { isAuthed, user } = useAuth()
   const { data, isPending, error } = useQuery({
-    queryKey: ['admin-metrics'],
+    queryKey: ['admin-metrics', user?.id],
     queryFn: fetchMetrics,
     enabled: isAuthed,
   })
 
-  if (!isAuthed) return <Navigate to="/login" replace />
+  if (!isAuthed) return <Navigate to="/login" state={{ from: "/admin" }} replace />
   if (user && !user.is_admin) return <Navigate to="/" replace />
   if (error?.message === 'forbidden') return <Navigate to="/" replace />
 

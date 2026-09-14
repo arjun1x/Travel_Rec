@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { getWeather } from '../lib/api'
 import { weatherLook } from '../lib/weather'
+import { DEMO_MODE } from '../lib/config'
 
 export default function WeatherBadge({ destinationId }: { destinationId: number }) {
   const { data } = useQuery({
@@ -8,6 +9,7 @@ export default function WeatherBadge({ destinationId }: { destinationId: number 
     queryFn: () => getWeather(destinationId),
     staleTime: 30 * 60 * 1000,
     retry: 1,
+    enabled: !DEMO_MODE,
   })
 
   if (!data) return null

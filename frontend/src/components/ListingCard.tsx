@@ -1,5 +1,5 @@
 import { useState, type ComponentType } from 'react'
-import { useNavigate } from 'react-router'
+import { useLocation, useNavigate } from 'react-router'
 import { Backpack, Building2, Hotel, House, Star } from 'lucide-react'
 import { useAuth } from '../lib/auth'
 import { trackInteraction } from '../lib/api'
@@ -18,10 +18,11 @@ export default function ListingCard({ listing }: { listing: Listing }) {
   const [booking, setBooking] = useState(false)
   const { isAuthed } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
 
   const onBook = () => {
     if (!isAuthed) {
-      navigate('/login')
+      navigate('/login', { state: { from: location.pathname } })
       return
     }
     trackInteraction(listing.id, 'click')
@@ -31,7 +32,7 @@ export default function ListingCard({ listing }: { listing: Listing }) {
   return (
     <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900">
       <div className="relative aspect-[3/2] overflow-hidden bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-800 dark:to-gray-700">
-        {listing.images[0] && !imageFailed && (
+        {listing.images[0] && !listing.images[0].includes('picsum.photos') && !imageFailed && (
           <img
             src={listing.images[0]}
             alt={listing.title}
@@ -40,6 +41,7 @@ export default function ListingCard({ listing }: { listing: Listing }) {
             className="h-full w-full object-cover"
           />
         )}
+        {(!listing.images[0] || listing.images[0].includes('picsum.photos') || imageFailed) && <div className="flex h-full flex-col items-center justify-center gap-2 text-gray-500"><Hotel size={40} strokeWidth={1} /><span className="text-xs">Sample property · photo unavailable</span></div>}
         <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-gray-800 shadow-sm backdrop-blur dark:bg-gray-900/80 dark:text-gray-100">
           {(() => {
             const t = TYPES[listing.type]
@@ -73,7 +75,7 @@ export default function ListingCard({ listing }: { listing: Listing }) {
             onClick={onBook}
             className="rounded-full bg-sky-600 px-4 py-1.5 text-sm font-semibold text-white transition hover:bg-sky-700"
           >
-            Book
+            Try a stay
           </button>
         </div>
       </div>

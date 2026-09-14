@@ -3,6 +3,8 @@ import { Link } from 'react-router'
 import { Loader2, MessageCircle, Send, X } from 'lucide-react'
 import { streamSSE } from '../lib/sse'
 import { useAuth } from '../lib/auth'
+import { useLocation } from 'react-router'
+import { DEMO_MODE } from '../lib/config'
 
 interface ChatMessage {
   role: 'user' | 'assistant'
@@ -10,7 +12,10 @@ interface ChatMessage {
 }
 
 export default function AssistantWidget() {
-  const { isAuthed } = useAuth()
+  const { isAuthed, user } = useAuth()
+  const location = useLocation()
+  const controller = useRef<AbortController | null>(null)
+  const trigger = useRef<HTMLButtonElement>(null)
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
@@ -18,13 +23,27 @@ export default function AssistantWidget() {
   const [error, setError] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
 
+  useEffect(() => () => controller.current?.abort(), [])
+  useEffect(() => {
+    controller.current?.abort()
+    setMessages([]); setError(null); setBusy(false)
+  }, [isAuthed, user?.id])
+  useEffect(() => {
+    if (!open) return
+    const close = (e: KeyboardEvent) => { if (e.key === 'Escape') { setOpen(false); trigger.current?.focus() } }
+    window.addEventListener('keydown', close)
+    return () => window.removeEventListener('keydown', close)
+  }, [open])
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, busy])
 
   const send = async () => {
     const content = input.trim()
-    if (!content || busy) return
+    if (!content || busy || !isAuthed || DEMO_MODE) return
+    controller.current?.abort()
+    const active = new AbortController()
+    controller.current = active
     setInput('')
     setError(null)
     const history: ChatMessage[] = [...messages, { role: 'user', content }]
@@ -34,7 +53,7 @@ export default function AssistantWidget() {
       for await (const event of streamSSE('/api/assistant/chat', {
         // keep the last 12 turns to bound tokens
         messages: history.slice(-12),
-      })) {
+      }, active.signal)) {
         if (event.type === 'delta') {
           setMessages((current) => {
             const next = [...current]
@@ -49,25 +68,29 @@ export default function AssistantWidget() {
         }
       }
     } catch (err) {
+      if (active.signal.aborted) return
       setMessages((current) => current.slice(0, -1))
       setError(err instanceof Error ? err.message : 'Something went wrong')
     } finally {
-      setBusy(false)
+      if (controller.current === active) setBusy(false)
     }
   }
 
   return (
     <>
       <button
+        ref={trigger}
+        aria-expanded={open}
+        aria-controls="travel-assistant"
         onClick={() => setOpen((v) => !v)}
         aria-label={open ? 'Close travel assistant' : 'Open travel assistant'}
-        className="fixed bottom-5 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-gray-900 text-white shadow-xl transition hover:scale-105 dark:bg-white dark:text-gray-900"
+        className="assistant-trigger"
       >
         {open ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
       </button>
 
       {open && (
-        <div className="fixed bottom-24 right-5 z-40 flex h-[480px] w-[min(380px,calc(100vw-2.5rem))] flex-col overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-2xl dark:border-gray-800 dark:bg-gray-900">
+        <div className="assistant-panel" id="travel-assistant" role="dialog" aria-label="Travel assistant">
           <div className="border-b border-gray-200 bg-gray-50 px-5 py-3.5 dark:border-gray-800 dark:bg-gray-950">
             <p className="font-bold tracking-tight">Travel assistant</p>
             <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -75,7 +98,7 @@ export default function AssistantWidget() {
             </p>
           </div>
 
-          <div className="flex-1 space-y-3 overflow-y-auto p-4">
+          <div className="flex-1 space-y-3 overflow-y-auto p-4" role="log" aria-live="polite">
             {messages.length === 0 && (
               <div className="space-y-2 text-sm text-gray-500 dark:text-gray-400">
                 <p>Try one of these:</p>
@@ -128,7 +151,7 @@ export default function AssistantWidget() {
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Ask anything travel…"
                 aria-label="Message the travel assistant"
-                className="flex-1 rounded-full border border-gray-300 bg-white px-4 py-2 text-sm outline-none focus:border-sky-500 dark:border-gray-700 dark:bg-gray-950"
+                className="min-w-0 flex-1 rounded-full border border-gray-300 bg-white px-4 py-2 text-sm outline-none focus:border-sky-500 dark:border-gray-700 dark:bg-gray-950"
               />
               <button
                 type="submit"
@@ -141,10 +164,10 @@ export default function AssistantWidget() {
             </form>
           ) : (
             <div className="border-t border-gray-200 p-4 text-center text-sm dark:border-gray-800">
-              <Link to="/login" className="font-semibold text-sky-600 hover:text-sky-700 dark:text-sky-400">
+              {DEMO_MODE ? <p className="text-xs leading-relaxed text-gray-500">The travel assistant is available when the backend is connected. You can browse and save places in this preview.</p> : <><Link to="/login" state={{ from: location.pathname }} className="font-semibold text-sky-600 hover:text-sky-700 dark:text-sky-400">
                 Sign in
               </Link>{' '}
-              <span className="text-gray-500 dark:text-gray-400">to chat with the assistant.</span>
+              <span className="text-gray-500 dark:text-gray-400">to chat with the assistant.</span></>}
             </div>
           )}
         </div>

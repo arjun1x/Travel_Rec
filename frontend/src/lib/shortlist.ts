@@ -9,13 +9,16 @@ const listeners = new Set<() => void>()
 function load(): number[] {
   try {
     const parsed = JSON.parse(localStorage.getItem(KEY) ?? '[]')
-    return Array.isArray(parsed) ? parsed.filter((x) => typeof x === 'number') : []
+    return Array.isArray(parsed) ? [...new Set<number>(parsed.filter((x) => Number.isSafeInteger(x) && x > 0))] : []
   } catch {
     return []
   }
 }
 
 let snapshot: number[] = load()
+window.addEventListener('storage', (event) => {
+  if (event.key === KEY || event.key === null) { snapshot = load(); listeners.forEach((notify) => notify()) }
+})
 
 function persist(ids: number[]) {
   snapshot = ids
@@ -38,6 +41,6 @@ export function useShortlist() {
     ids,
     has: (id: number) => ids.includes(id),
     toggle: (id: number) =>
-      persist(ids.includes(id) ? ids.filter((i) => i !== id) : [...ids, id]),
+      persist(snapshot.includes(id) ? snapshot.filter((i) => i !== id) : [...snapshot, id]),
   }
 }

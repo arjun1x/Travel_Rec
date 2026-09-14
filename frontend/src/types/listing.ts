@@ -24,4 +24,6 @@ export interface ListingFilters {
   sort?: ListingSort
   guests?: number
   max_price?: number
+  min_price?: number
+  amenities?: string[]
 }

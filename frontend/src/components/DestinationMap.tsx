@@ -9,7 +9,7 @@ interface Props {
 }
 
 const pin = divIcon({
-  html: '<span style="font-size:28px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.4))">📍</span>',
+  html: '<span style="display:block;width:20px;height:20px;background:#c54d31;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px #0004"></span>',
   className: '', // suppress default divIcon box styles
   iconSize: [28, 28],
   iconAnchor: [14, 28],
@@ -18,6 +18,7 @@ const pin = divIcon({
 export default function DestinationMap({ name, lat, lng }: Props) {
   return (
     <MapContainer
+      key={`${lat},${lng}`}
       center={[lat, lng]}
       zoom={11}
       scrollWheelZoom={false}

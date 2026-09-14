@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Navigate } from 'react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { authFetch, logout, useAuth } from '../lib/auth'
+import { ErrorState } from '../components/QueryState'
 import type { Preferences } from '../types/preferences'
 
 const TRIP_STYLES = [
@@ -48,8 +49,8 @@ export default function ProfilePage() {
   const { user, isAuthed } = useAuth()
   const queryClient = useQueryClient()
 
-  const { data: saved } = useQuery({
-    queryKey: ['preferences'],
+  const { data: saved, isPending, isError, refetch } = useQuery({
+    queryKey: ['preferences', user?.id],
     queryFn: fetchPreferences,
     enabled: isAuthed,
   })
@@ -67,10 +68,10 @@ export default function ProfilePage() {
 
   const mutation = useMutation({
     mutationFn: savePreferences,
-    onSuccess: (data) => queryClient.setQueryData(['preferences'], data),
+    onSuccess: (data) => { queryClient.setQueryData(['preferences', user?.id], data); void queryClient.invalidateQueries({ queryKey: ['recommendations'] }) },
   })
 
-  if (!isAuthed) return <Navigate to="/login" replace />
+  if (!isAuthed) return <Navigate to="/login" state={{ from: "/profile" }} replace />
 
   const toggleIn = (key: 'trip_styles' | 'preferred_climates', value: string) =>
     setForm((f) => ({
@@ -95,10 +96,12 @@ export default function ProfilePage() {
         </button>
       </div>
 
+      {isError && <div className="mt-8"><ErrorState title="We couldn’t load your preferences." onRetry={() => void refetch()} /></div>}
+      {isPending && <p role="status" className="mt-8 text-sm text-gray-500">Loading your preferences…</p>}
       <form
         onSubmit={(e) => {
           e.preventDefault()
-          mutation.mutate(form)
+          if (!isError && !isPending && (form.budget_min == null || form.budget_max == null || form.budget_max >= form.budget_min)) mutation.mutate(form)
         }}
         className="mt-8 space-y-8 rounded-3xl border border-gray-200 bg-white p-7 shadow-sm dark:border-gray-800 dark:bg-gray-900"
       >
@@ -139,6 +142,7 @@ export default function ProfilePage() {
             <input
               type="number"
               min={0}
+              aria-label="Minimum nightly budget"
               placeholder="Min"
               value={form.budget_min ?? ''}
               onChange={(e) =>
@@ -150,6 +154,7 @@ export default function ProfilePage() {
             <input
               type="number"
               min={0}
+              aria-label="Maximum nightly budget"
               placeholder="Max"
               value={form.budget_max ?? ''}
               onChange={(e) =>
@@ -166,6 +171,7 @@ export default function ProfilePage() {
             Dietary needs, accessibility, anything the AI planner should know.
           </p>
           <textarea
+            aria-label="Travel notes"
             rows={3}
             value={form.notes ?? ''}
             onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value || null }))}
@@ -173,10 +179,11 @@ export default function ProfilePage() {
           />
         </div>
 
-        <div className="flex items-center gap-4">
+        {form.budget_min != null && form.budget_max != null && form.budget_max < form.budget_min && <p role="alert" className="form-error">The maximum budget must be at least the minimum budget.</p>}
+        <div className="flex flex-wrap items-center gap-4">
           <button
             type="submit"
-            disabled={mutation.isPending}
+            disabled={mutation.isPending || isPending || isError || (form.budget_min != null && form.budget_max != null && form.budget_max < form.budget_min)}
             className="rounded-full bg-gray-900 px-7 py-3 font-semibold text-white transition hover:bg-gray-700 disabled:opacity-60 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200"
           >
             {mutation.isPending ? 'Saving…' : 'Save preferences'}

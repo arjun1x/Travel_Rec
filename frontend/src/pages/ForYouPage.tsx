@@ -6,16 +6,16 @@ import { useAuth } from '../lib/auth'
 import ListingCard from '../components/ListingCard'
 
 export default function ForYouPage() {
-  const { isAuthed } = useAuth()
+  const { isAuthed, user } = useAuth()
 
   const { data, isPending, isError, error } = useQuery({
-    queryKey: ['recommendations'],
+    queryKey: ['recommendations', user?.id],
     queryFn: () => getRecommendations(24),
     enabled: isAuthed,
     staleTime: 60 * 1000,
   })
 
-  if (!isAuthed) return <Navigate to="/login" replace />
+  if (!isAuthed) return <Navigate to="/login" state={{ from: "/foryou" }} replace />
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-10">
@@ -52,6 +52,7 @@ export default function ForYouPage() {
         ))}
       </div>
 
+      {data?.length === 0 && <p className="service-note mt-8">No recommendations yet. Add a few interests in your profile and browse some destinations to get started.</p>}
       {isError && (
         <div className="mt-10 rounded-xl border border-red-200 bg-red-50 p-6 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
           {error.message}

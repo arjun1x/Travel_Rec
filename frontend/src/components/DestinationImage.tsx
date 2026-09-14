@@ -1,34 +1,16 @@
 import { useState } from 'react'
-import { emojiFor, gradientFor } from '../lib/visuals'
+import { Mountain } from 'lucide-react'
+import { DESTINATION_PHOTOS } from '../lib/photography'
 import type { Destination } from '../types/destination'
 
-interface Props {
-  destination: Destination
-  className?: string
-}
-
-export default function DestinationImage({ destination, className = '' }: Props) {
-  const [failed, setFailed] = useState(false)
-  const showImage = destination.image_url && !failed
-
-  if (showImage) {
-    return (
-      <img
-        src={destination.image_url!}
-        alt={`${destination.name}, ${destination.country}`}
-        loading="lazy"
-        onError={() => setFailed(true)}
-        className={`object-cover ${className}`}
-      />
-    )
-  }
-
-  return (
-    <div
-      aria-hidden
-      className={`flex items-center justify-center bg-gradient-to-br ${gradientFor(destination.name)} ${className}`}
-    >
-      <span className="text-5xl drop-shadow-sm">{emojiFor(destination.tags)}</span>
-    </div>
-  )
+export default function DestinationImage({ destination, className = '', priority = false }: { destination: Destination; className?: string; priority?: boolean }) {
+  const curated = DESTINATION_PHOTOS[destination.name]
+  const supplied = destination.image_url && !destination.image_url.includes('picsum.photos') ? destination.image_url : null
+  const source = supplied || curated
+  const [failedSource, setFailedSource] = useState<string | null>(null)
+  if (source && failedSource !== source) return <img src={source} alt={`${destination.name}, ${destination.country}`}
+    loading={priority ? 'eager' : 'lazy'} decoding="async" onError={() => setFailedSource(source)} className={`object-cover ${className}`} />
+  return <div role="img" aria-label={`${destination.name}, photograph unavailable`} className={`destination-placeholder ${className}`}>
+    <Mountain strokeWidth={0.6} /><span>{destination.name}</span><small>{destination.country}</small>
+  </div>
 }

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { getWeather } from '../lib/api'
+import { DEMO_MODE } from '../lib/config'
 import { formatDay, weatherLook } from '../lib/weather'
 
 export default function WeatherPanel({ destinationId }: { destinationId: number }) {
@@ -8,7 +9,10 @@ export default function WeatherPanel({ destinationId }: { destinationId: number 
     queryFn: () => getWeather(destinationId),
     staleTime: 30 * 60 * 1000,
     retry: 1,
+    enabled: !DEMO_MODE,
   })
+
+  if (DEMO_MODE) return <div className="rounded-xl border border-gray-200 bg-[#eeefe4] p-6"><span className="eyebrow">A LITTLE WEATHER WISDOM</span><h2 className="mt-3 font-[var(--font-display)] text-3xl">Know before you go.</h2><p className="mt-3 text-xs leading-relaxed text-gray-500">Connect the backend for the current weather and a seven-day forecast. Live readings are not available in the preview collection.</p></div>
 
   if (isPending) {
     return (
