@@ -25,7 +25,7 @@ function DeferredCompass() {
 }
 
 export default function LandingPage() {
-  const { data, isPending, isError, refetch } = useQuery({ queryKey: ['destinations', 'catalog'], queryFn: () => getDestinations(100) })
+  const { data, isPending, isError, refetch } = useQuery({ queryKey: ['destinations', 'catalog'], queryFn: () => getDestinations(500) })
   const picks = data ? featuredNames.flatMap((name) => { const d = data.find((d) => d.name === name); return d ? [d] : [] }) : []
   const featured = picks.length ? picks : (data ?? []).slice(0, 4)
   return <main className="landing-page">

@@ -116,7 +116,8 @@ backend/
 frontend/
   src/          # pages, components (incl. components/ui), lib (api, auth, sse, shortlist)
   Dockerfile + nginx.conf
-scripts/seed.py       # idempotent: 50 destinations, 505 listings, demo users, interactions
+scripts/seed.py       # idempotent: 126 destinations, ~1,280 listings, demo users, interactions
+scripts/fetch_photos.py  # licensed Wikimedia photo per destination + CREDITS.md
 scripts/embed.py      # embeddings via Voyage AI or local sentence-transformers
 docker-compose.yml    # infra by default; --profile full adds api + frontend
 ```

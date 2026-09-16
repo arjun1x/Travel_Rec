@@ -11,7 +11,13 @@ export const COUNTRY_REGIONS: Record<string, string> = {
   Zimbabwe: 'Africa', Seychelles: 'Africa', Canada: 'North America',
   'United States': 'North America', Mexico: 'North America', Peru: 'South America',
   Brazil: 'South America', Argentina: 'South America', Ecuador: 'South America',
-  Australia: 'Oceania', 'New Zealand': 'Oceania', Fiji: 'Oceania',
+  Australia: 'Oceania', 'New Zealand': 'Oceania', Fiji: 'Oceania', 'French Polynesia': 'Oceania',
+  Germany: 'Europe', Denmark: 'Europe', Sweden: 'Europe', Norway: 'Europe', Finland: 'Europe',
+  Ireland: 'Europe', Hungary: 'Europe', Poland: 'Europe', Belgium: 'Europe', Estonia: 'Europe', Slovenia: 'Europe',
+  'Hong Kong': 'Asia', China: 'Asia', Taiwan: 'Asia', Malaysia: 'Asia', Laos: 'Asia', Cambodia: 'Asia',
+  India: 'Asia', Nepal: 'Asia', 'Sri Lanka': 'Asia', 'United Arab Emirates': 'Asia', Oman: 'Asia',
+  Georgia: 'Asia', Uzbekistan: 'Asia', Kenya: 'Africa', Mauritius: 'Africa', Namibia: 'Africa', Ethiopia: 'Africa',
+  Cuba: 'North America', 'Costa Rica': 'North America', Colombia: 'South America', Chile: 'South America',
 }
 export const TRIP_STYLES = [
   { value: '', label: 'A bit of everything', icon: 'compass' },

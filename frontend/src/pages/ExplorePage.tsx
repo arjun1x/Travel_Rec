@@ -21,7 +21,7 @@ export default function ExplorePage() {
   const view = ['grid', 'list', 'map'].includes(params.get('view') ?? '') ? params.get('view')! : 'grid'
   const signature = params.toString()
   useEffect(() => { setVisible(12) }, [signature])
-  const { data, isPending, isError, refetch } = useQuery({ queryKey: ['destinations', 'catalog'], queryFn: () => getDestinations(100) })
+  const { data, isPending, isError, refetch } = useQuery({ queryKey: ['destinations', 'catalog'], queryFn: () => getDestinations(500) })
   const results = useMemo(() => filterDestinations(data ?? [], { q, region, tags, sort }), [data, q, region, tags, sort])
   const allTags = useMemo(() => [...new Set((data ?? []).flatMap((d) => d.tags))].sort(), [data])
   const update = (key: string, value: string) => setParams((prev) => { const next = new URLSearchParams(prev); if (value) next.set(key, value); else next.delete(key); return next }, { replace: true })
